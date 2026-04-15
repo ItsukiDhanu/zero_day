@@ -1,0 +1,106 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@keyframes route-fade-in {
+	0% {
+		opacity: 0;
+		transform: translateY(8px);
+		filter: blur(2px);
+	}
+
+	100% {
+		opacity: 1;
+		transform: translateY(0);
+		filter: blur(0);
+	}
+}
+
+@keyframes route-scan-line {
+	0% {
+		opacity: 0;
+		transform: scaleX(0.15);
+	}
+
+	35% {
+		opacity: 0.9;
+		transform: scaleX(1);
+	}
+
+	100% {
+		opacity: 0;
+		transform: scaleX(1);
+	}
+}
+
+@keyframes hero-fade-in {
+	0% {
+		opacity: 0;
+		transform: translateY(14px);
+	}
+
+	100% {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+@keyframes caret-blink {
+	0%,
+	100% {
+		opacity: 1;
+	}
+
+	50% {
+		opacity: 0.15;
+	}
+}
+
+@keyframes palette-overlay-in {
+	0% {
+		opacity: 0;
+	}
+
+	100% {
+		opacity: 1;
+	}
+}
+
+@keyframes palette-panel-in {
+	0% {
+		opacity: 0;
+		transform: translateY(18px) scale(0.98);
+	}
+
+	100% {
+		opacity: 1;
+		transform: translateY(0) scale(1);
+	}
+}
+
+@layer utilities {
+	.animate-route-fade-in {
+		animation: route-fade-in 200ms ease-out;
+	}
+
+	.animate-route-scan-line {
+		transform-origin: center;
+		animation: route-scan-line 280ms ease-out;
+	}
+
+	.animate-hero-fade-in {
+		animation: hero-fade-in 450ms ease-out;
+	}
+
+	.animate-caret-blink {
+		animation: caret-blink 900ms ease-in-out infinite;
+	}
+
+	.animate-palette-overlay-in {
+		animation: palette-overlay-in 180ms ease-out;
+	}
+
+	.animate-palette-panel-in {
+		animation: palette-panel-in 180ms ease-out;
+	}
+}

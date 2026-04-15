@@ -1,0 +1,69 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum UserRole {
+  PARTICIPANT
+  ORGANIZER
+  ADMIN
+}
+
+enum AcademicYear {
+  FIRST_YEAR  @map("1st Year")
+  SECOND_YEAR @map("2nd Year")
+}
+
+model User {
+  id          String   @id @default(uuid()) @db.Uuid
+  email       String   @unique
+  passwordHash String?  @map("password_hash")
+  role        UserRole @default(PARTICIPANT)
+  name        String?
+  year        AcademicYear?
+  branch      String?
+  phoneNumber String?
+
+  // If a team is deleted, keep user record and null out teamId.
+  teamId String? @db.Uuid
+  team   Team?   @relation("TeamMembership", fields: [teamId], references: [id], onDelete: SetNull)
+
+  captainedTeams Team[] @relation("TeamCaptain")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([teamId])
+  @@index([createdAt])
+}
+
+model Team {
+  id        String @id @default(uuid()) @db.Uuid
+  name      String
+  joinCode  String @unique @map("join_code") @db.Char(6)
+  members   User[] @relation("TeamMembership")
+
+  captainId String? @map("captain_id") @db.Uuid
+  captain   User?   @relation("TeamCaptain", fields: [captainId], references: [id], onDelete: SetNull)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([captainId])
+  @@index([createdAt])
+
+  // Prisma cannot enforce relation-cardinality max(4) in schema DSL.
+  // Enforce 4-member cap in app logic and/or a SQL trigger/check in migration.
+}
+
+model SiteSettings {
+  id               String   @id @default(uuid()) @db.Uuid
+  singletonKey     String   @unique @default("global")
+  registrationOpen Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
