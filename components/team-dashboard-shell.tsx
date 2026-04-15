@@ -55,7 +55,7 @@ export function TeamDashboardShell({
   const [joinCode, setJoinCode] = useState("");
   const [user, setUser] = useState<SessionUser | null>(initialUser);
   const [team, setTeam] = useState<TeamState | null>(initialTeam);
-  const [registrationOpen, setRegistrationOpen] = useState(initialRegistrationOpen);
+  const [registrationOpen] = useState(initialRegistrationOpen);
   const [hydrating, setHydrating] = useState(false);
   const [createStatus, setCreateStatus] = useState<"idle" | "submitting">("idle");
   const [joinStatus, setJoinStatus] = useState<"idle" | "submitting">("idle");

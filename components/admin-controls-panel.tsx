@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 type TeamMemberSnapshot = {
   id: string;
@@ -118,7 +118,7 @@ export function AdminControlsPanel({ mode = "admin" }: { mode?: ControlPanelMode
     return counts;
   }, [users]);
 
-  const loadSettings = async () => {
+  const loadSettings = useCallback(async () => {
     const response = await fetch("/api/settings", { cache: "no-store" });
     const payload = (await response.json().catch(() => ({}))) as SettingsResponse;
 
@@ -127,9 +127,9 @@ export function AdminControlsPanel({ mode = "admin" }: { mode?: ControlPanelMode
     }
 
     setRegistrationOpen(payload.registrationOpen);
-  };
+  }, []);
 
-  const loadUsers = async () => {
+  const loadUsers = useCallback(async () => {
     setUsersLoading(true);
     setUsersMessage("");
 
@@ -148,7 +148,7 @@ export function AdminControlsPanel({ mode = "admin" }: { mode?: ControlPanelMode
     } finally {
       setUsersLoading(false);
     }
-  };
+  }, []);
 
   const loadTeams = async () => {
     setTeamsLoading(true);
@@ -171,7 +171,7 @@ export function AdminControlsPanel({ mode = "admin" }: { mode?: ControlPanelMode
     }
   };
 
-  const loadAll = async () => {
+  const loadAll = useCallback(async () => {
     setSettingsMessage("");
     setUsersMessage("");
     setTeamsMessage("");
@@ -181,11 +181,11 @@ export function AdminControlsPanel({ mode = "admin" }: { mode?: ControlPanelMode
     } catch (error) {
       setSettingsMessage(error instanceof Error ? error.message : "Unable to load control center state.");
     }
-  };
+  }, [loadSettings, loadUsers]);
 
   useEffect(() => {
     void loadAll();
-  }, []);
+  }, [loadAll]);
 
   const handleToggleRegistration = async () => {
     setSettingsBusy(true);
@@ -562,7 +562,7 @@ export function AdminControlsPanel({ mode = "admin" }: { mode?: ControlPanelMode
             {teamsLoading ? (
               <p className="text-sm text-neutral-400">Loading team directory...</p>
             ) : !teamsLoaded ? (
-              <p className="text-sm text-neutral-400">Team directory is not loaded yet. Click "Load Teams" when needed.</p>
+              <p className="text-sm text-neutral-400">Team directory is not loaded yet. Click Load Teams when needed.</p>
             ) : teams.length === 0 ? (
               <p className="text-sm text-neutral-400">No teams created yet.</p>
             ) : (
