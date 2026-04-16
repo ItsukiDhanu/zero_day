@@ -1,4 +1,5 @@
 import { createHash, randomBytes } from "node:crypto";
+import nodemailer from "nodemailer";
 
 const PASSWORD_RESET_TTL_MINUTES = 30;
 
@@ -33,29 +34,25 @@ export function buildPasswordResetUrl(baseUrl: string, token: string) {
   return `${baseUrl}/reset-password?token=${encodeURIComponent(token)}`;
 }
 
-export async function dispatchPasswordResetEmail({
+async function dispatchWithResend({
   to,
+  from,
+  apiKey,
   resetUrl,
 }: {
   to: string;
+  from: string;
+  apiKey: string;
   resetUrl: string;
-}): Promise<PasswordResetDispatchResult> {
-  const resendApiKey = process.env.RESEND_API_KEY?.trim();
-  const resendFromEmail = process.env.RESEND_FROM_EMAIL?.trim();
-
-  if (!resendApiKey || !resendFromEmail) {
-    console.info(`[password-reset] Reset link for ${to}: ${resetUrl}`);
-    return "logged";
-  }
-
+}) {
   const response = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: {
-      Authorization: `Bearer ${resendApiKey}`,
+      Authorization: `Bearer ${apiKey}`,
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      from: resendFromEmail,
+      from,
       to,
       subject: "Zero_Day password reset",
       text: `Use this link to reset your Zero_Day password (valid for ${PASSWORD_RESET_TTL_MINUTES} minutes): ${resetUrl}`,
@@ -67,6 +64,79 @@ export async function dispatchPasswordResetEmail({
     const errorBody = await response.text().catch(() => "unknown error");
     throw new Error(`Resend email dispatch failed: ${response.status} ${errorBody}`);
   }
+}
 
-  return "sent";
+async function dispatchWithGmail({
+  to,
+  gmailUser,
+  gmailAppPassword,
+  resetUrl,
+}: {
+  to: string;
+  gmailUser: string;
+  gmailAppPassword: string;
+  resetUrl: string;
+}) {
+  const transporter = nodemailer.createTransport({
+    service: "gmail",
+    auth: {
+      user: gmailUser,
+      pass: gmailAppPassword,
+    },
+  });
+
+  await transporter.sendMail({
+    from: gmailUser,
+    to,
+    subject: "Zero_Day password reset",
+    text: `Use this link to reset your Zero_Day password (valid for ${PASSWORD_RESET_TTL_MINUTES} minutes): ${resetUrl}`,
+    html: `<p>Use this link to reset your Zero_Day password (valid for ${PASSWORD_RESET_TTL_MINUTES} minutes):</p><p><a href=\"${resetUrl}\">${resetUrl}</a></p>`,
+  });
+}
+
+export async function dispatchPasswordResetEmail({
+  to,
+  resetUrl,
+}: {
+  to: string;
+  resetUrl: string;
+}): Promise<PasswordResetDispatchResult> {
+  const resendApiKey = process.env.RESEND_API_KEY?.trim();
+  const resendFromEmail = process.env.RESEND_FROM_EMAIL?.trim();
+  const gmailUser = process.env.GMAIL_USER?.trim();
+  const gmailAppPassword = process.env.GMAIL_APP_PASSWORD?.trim();
+
+  const canUseResend = Boolean(resendApiKey && resendFromEmail);
+  const canUseGmail = Boolean(gmailUser && gmailAppPassword);
+
+  if (canUseResend && resendApiKey && resendFromEmail) {
+    try {
+      await dispatchWithResend({
+        to,
+        from: resendFromEmail,
+        apiKey: resendApiKey,
+        resetUrl,
+      });
+      return "sent";
+    } catch (error) {
+      if (!canUseGmail) {
+        throw error;
+      }
+
+      console.error("[password-reset] Resend failed, falling back to Gmail", error);
+    }
+  }
+
+  if (canUseGmail && gmailUser && gmailAppPassword) {
+    await dispatchWithGmail({
+      to,
+      gmailUser,
+      gmailAppPassword,
+      resetUrl,
+    });
+    return "sent";
+  }
+
+  console.info(`[password-reset] Reset link for ${to}: ${resetUrl}`);
+  return "logged";
 }
