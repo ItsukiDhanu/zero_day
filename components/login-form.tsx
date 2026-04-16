@@ -6,6 +6,10 @@ import { useRouter } from "next/navigation";
 
 const SESSION_UPDATED_EVENT = "session-updated";
 
+type LoginFormProps = {
+  redirectTo?: string;
+};
+
 type LoginState = {
   email: string;
   password: string;
@@ -21,7 +25,7 @@ const initialState: LoginState = {
   password: "",
 };
 
-export function LoginForm() {
+export function LoginForm({ redirectTo = "/dashboard" }: LoginFormProps) {
   const router = useRouter();
   const [form, setForm] = useState<LoginState>(initialState);
   const [status, setStatus] = useState<"idle" | "submitting" | "success" | "error">("idle");
@@ -51,7 +55,7 @@ export function LoginForm() {
       setForm(initialState);
       setMessage(payload.message ?? "Login successful.");
       window.dispatchEvent(new Event(SESSION_UPDATED_EVENT));
-      router.push("/teams");
+      router.push(redirectTo);
     } catch (error) {
       setStatus("error");
       setMessage(error instanceof Error ? error.message : "Login request failed.");
@@ -94,6 +98,12 @@ export function LoginForm() {
               placeholder="Your password"
             />
           </label>
+
+          <div className="-mt-1">
+            <Link href="/forgot-password" className="text-xs text-terminal-amber underline underline-offset-2">
+              Forgot password?
+            </Link>
+          </div>
 
           <div className="flex flex-wrap items-center gap-4">
             <button

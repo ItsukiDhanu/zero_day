@@ -35,11 +35,25 @@ const commandActions: CommandAction[] = [
     path: "/login",
   },
   {
+    id: "forgot-password",
+    label: "Reset Password",
+    section: "Onboarding",
+    hint: "Open forgot-password page",
+    path: "/forgot-password",
+  },
+  {
     id: "teams",
     label: "Team Console",
     section: "Team Ops",
     hint: "Open team dashboard page",
     path: "/teams",
+  },
+  {
+    id: "dashboard",
+    label: "Participant Dashboard",
+    section: "Workspace",
+    hint: "Open participant dashboard",
+    path: "/dashboard",
   },
 ];
 

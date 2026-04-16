@@ -1,29 +1,13 @@
 import Link from "next/link";
 import { cookies } from "next/headers";
 import { CommandPalette } from "@/components/command-palette";
-import { LoginForm } from "@/components/login-form";
+import { ForgotPasswordForm } from "@/components/forgot-password-form";
 import { decodeSessionToken } from "@/lib/session";
 
-type LoginPageProps = {
-  searchParams?: Promise<Record<string, string | string[] | undefined>>;
-};
-
-function getRedirectTarget(nextParam: string | string[] | undefined) {
-  const value = Array.isArray(nextParam) ? nextParam[0] : nextParam;
-
-  if (!value || !value.startsWith("/") || value.startsWith("//")) {
-    return "/dashboard";
-  }
-
-  return value;
-}
-
-export default async function LoginPage({ searchParams }: LoginPageProps) {
+export default async function ForgotPasswordPage() {
   const cookieStore = await cookies();
   const sessionToken = cookieStore.get("zd_session")?.value;
   const isAuthenticated = Boolean(decodeSessionToken(sessionToken));
-  const resolvedSearchParams = (await searchParams) ?? {};
-  const redirectTarget = getRedirectTarget(resolvedSearchParams.next);
 
   return (
     <main className="relative min-h-screen overflow-hidden bg-neutral-950 pb-12 text-neutral-100">
@@ -38,7 +22,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
       <div className="relative z-10 mx-auto w-full max-w-6xl px-4 pt-6 sm:px-6 lg:px-8">
         <header className="rounded-xl border border-white/10 bg-black/40 px-4 py-3 backdrop-blur-md">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <p className="text-sm font-semibold tracking-[0.2em] text-phosphor">ZERO_DAY // LOGIN</p>
+            <p className="text-sm font-semibold tracking-[0.2em] text-phosphor">ZERO_DAY // PASSWORD RESET</p>
             <nav className="flex flex-wrap items-center gap-2 text-xs">
               <Link
                 href="/"
@@ -54,22 +38,18 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
                   Dashboard
                 </Link>
               ) : null}
-              {!isAuthenticated ? (
-                <>
-                  <Link
-                    href="/register"
-                    className="rounded-md border border-white/15 bg-black/40 px-2.5 py-1 text-neutral-300 transition hover:border-phosphor/40 hover:text-phosphor"
-                  >
-                    Register
-                  </Link>
-                  <Link
-                    href="/login"
-                    className="rounded-md border border-phosphor/40 bg-phosphor/10 px-2.5 py-1 text-phosphor"
-                  >
-                    Login
-                  </Link>
-                </>
-              ) : null}
+              <Link
+                href="/login"
+                className="rounded-md border border-white/15 bg-black/40 px-2.5 py-1 text-neutral-300 transition hover:border-phosphor/40 hover:text-phosphor"
+              >
+                Login
+              </Link>
+              <Link
+                href="/forgot-password"
+                className="rounded-md border border-phosphor/40 bg-phosphor/10 px-2.5 py-1 text-phosphor"
+              >
+                Forgot Password
+              </Link>
               <Link
                 href="/teams"
                 className="rounded-md border border-white/15 bg-black/40 px-2.5 py-1 text-neutral-300 transition hover:border-terminal-amber/60 hover:text-terminal-amber"
@@ -80,7 +60,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
           </div>
         </header>
 
-        <LoginForm redirectTo={redirectTarget} />
+        <ForgotPasswordForm />
       </div>
     </main>
   );

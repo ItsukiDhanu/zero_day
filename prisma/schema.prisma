@@ -23,6 +23,8 @@ model User {
   id          String   @id @default(uuid()) @db.Uuid
   email       String   @unique
   passwordHash String?  @map("password_hash")
+  passwordResetTokenHash String? @map("password_reset_token_hash") @db.Char(64)
+  passwordResetExpiresAt DateTime? @map("password_reset_expires_at")
   role        UserRole @default(PARTICIPANT)
   name        String?
   year        AcademicYear?
@@ -39,6 +41,7 @@ model User {
   updatedAt DateTime @updatedAt
 
   @@index([teamId])
+  @@index([passwordResetTokenHash])
   @@index([createdAt])
 }
 
