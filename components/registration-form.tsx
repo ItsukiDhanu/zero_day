@@ -18,6 +18,21 @@ const YEAR_OPTIONS = [
   { label: "2nd Year", value: "SECOND_YEAR" },
 ] as const;
 
+const DEPARTMENT_OPTIONS = [
+  "CSE",
+  "CSE-DS",
+  "AIML",
+  "ISE",
+  "MT",
+  "ME",
+  "EC",
+  "EE",
+  "AE",
+  "BT",
+  "CV",
+  "Other",
+] as const;
+
 type RegistrationResponse = {
   message?: string;
   error?: string;
@@ -142,15 +157,22 @@ export function RegistrationForm() {
           </fieldset>
 
           <label className="grid gap-2 text-sm text-neutral-200">
-            <span>Branch *</span>
-            <input
+            <span>Department *</span>
+            <select
               required
-              type="text"
               value={form.branch}
               onChange={(event) => setForm((current) => ({ ...current, branch: event.target.value }))}
-              className="rounded-lg border border-white/10 bg-black/60 px-3 py-2 text-neutral-100 outline-none transition placeholder:text-neutral-500 focus:border-phosphor focus:ring-2 focus:ring-phosphor/30"
-              placeholder="CSE, ECE, ME, etc."
-            />
+              className="rounded-lg border border-white/10 bg-black/60 px-3 py-2 text-neutral-100 outline-none transition focus:border-phosphor focus:ring-2 focus:ring-phosphor/30"
+            >
+              <option value="" disabled>
+                Select your department
+              </option>
+              {DEPARTMENT_OPTIONS.map((department) => (
+                <option key={department} value={department}>
+                  {department}
+                </option>
+              ))}
+            </select>
           </label>
 
           <label className="grid gap-2 text-sm text-neutral-200">

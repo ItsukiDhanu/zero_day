@@ -22,6 +22,21 @@ const YEAR_MAP: Record<string, AcademicYear> = {
   "2nd Year": "SECOND_YEAR",
 };
 
+const DEPARTMENT_OPTIONS = new Set([
+  "CSE",
+  "CSE-DS",
+  "AIML",
+  "ISE",
+  "MT",
+  "ME",
+  "EC",
+  "EE",
+  "AE",
+  "BT",
+  "CV",
+  "Other",
+]);
+
 function isValidEmail(email: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
@@ -49,8 +64,8 @@ function parsePayload(payload: RegisterPayload) {
     throw new ApiError(400, "Year must be either 1st Year or 2nd Year.");
   }
 
-  if (!branch || branch.length > 80) {
-    throw new ApiError(400, "Branch is required and must be 80 characters or fewer.");
+  if (!branch || !DEPARTMENT_OPTIONS.has(branch)) {
+    throw new ApiError(400, "Department is required and must be selected from the provided list.");
   }
 
   if (!collegeEmail || !isValidAcharyaEmail(collegeEmail)) {
