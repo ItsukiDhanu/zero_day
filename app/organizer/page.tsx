@@ -54,6 +54,12 @@ export default async function OrganizerConsolePage() {
               >
                 Teams
               </Link>
+              <Link
+                href="/confirmed-teams"
+                className="rounded-md border border-white/15 bg-black/40 px-2.5 py-1 text-neutral-300 transition hover:border-phosphor/40 hover:text-phosphor"
+              >
+                Confirmed Teams
+              </Link>
               {currentUser.role === "ADMIN" ? (
                 <Link
                   href="/admin"

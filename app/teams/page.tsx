@@ -130,6 +130,12 @@ export default async function TeamsPage() {
                 </Link>
               ) : null}
               <Link
+                href="/confirmed-teams"
+                className="rounded-md border border-white/15 bg-black/40 px-2.5 py-1 text-neutral-300 transition hover:border-phosphor/40 hover:text-phosphor"
+              >
+                Confirmed Teams
+              </Link>
+              <Link
                 href="/teams"
                 className="rounded-md border border-terminal-amber/60 bg-terminal-amber/10 px-2.5 py-1 text-terminal-amber"
               >
