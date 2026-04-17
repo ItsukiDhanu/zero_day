@@ -49,6 +49,13 @@ const commandActions: CommandAction[] = [
     path: "/teams",
   },
   {
+    id: "confirmed-teams",
+    label: "Confirmed Teams",
+    section: "Team Ops",
+    hint: "Open public confirmed teams roster",
+    path: "/confirmed-teams",
+  },
+  {
     id: "dashboard",
     label: "Participant Dashboard",
     section: "Workspace",

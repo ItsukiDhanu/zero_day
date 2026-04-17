@@ -60,13 +60,19 @@ export default async function HomePage() {
               >
                 Teams
               </Link>
+              <Link
+                href="/confirmed-teams"
+                className="rounded-md border border-white/15 bg-black/40 px-2.5 py-1 text-neutral-300 transition hover:border-phosphor/40 hover:text-phosphor"
+              >
+                Confirmed Teams
+              </Link>
             </nav>
           </div>
         </header>
 
         <HeroSection />
 
-        <section className="mx-auto mt-10 grid w-full max-w-5xl gap-5 pb-10 md:grid-cols-2">
+        <section className="mx-auto mt-10 grid w-full max-w-5xl gap-5 pb-10 md:grid-cols-2 lg:grid-cols-3">
           <Link
             href="/register"
             className="rounded-2xl border border-white/10 bg-black/40 p-6 backdrop-blur-md transition hover:border-phosphor/40"
@@ -86,6 +92,17 @@ export default async function HomePage() {
             <h2 className="mt-3 text-xl font-semibold text-neutral-100">Open Team Operations</h2>
             <p className="mt-3 text-sm text-neutral-300">
               Create team, join via secure code, monitor capacity, and manage registration state.
+            </p>
+          </Link>
+
+          <Link
+            href="/confirmed-teams"
+            className="rounded-2xl border border-white/10 bg-black/40 p-6 backdrop-blur-md transition hover:border-phosphor/40"
+          >
+            <p className="text-xs uppercase tracking-[0.2em] text-phosphor/90">Public Roster</p>
+            <h2 className="mt-3 text-xl font-semibold text-neutral-100">View Confirmed Teams</h2>
+            <p className="mt-3 text-sm text-neutral-300">
+              Public list of teams with 2 to 4 members, including participant names.
             </p>
           </Link>
         </section>
