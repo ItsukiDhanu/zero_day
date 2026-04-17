@@ -85,6 +85,14 @@ function formatAcademicYear(year: string | null) {
   return year ?? "Year N/A";
 }
 
+function toCsvCell(value: string) {
+  if (/[,"\n]/.test(value)) {
+    return `"${value.replace(/"/g, '""')}"`;
+  }
+
+  return value;
+}
+
 export function AdminControlsPanel({ mode = "admin" }: { mode?: ControlPanelMode }) {
   const isOrganizerView = mode === "organizer";
 
@@ -96,6 +104,9 @@ export function AdminControlsPanel({ mode = "admin" }: { mode?: ControlPanelMode
   const [teamsById, setTeamsById] = useState<Record<string, TeamSnapshot>>({});
   const [usersLoading, setUsersLoading] = useState(false);
   const [usersMessage, setUsersMessage] = useState("");
+  const [userSearchQuery, setUserSearchQuery] = useState("");
+  const [lastUserSearchQuery, setLastUserSearchQuery] = useState("");
+  const [usersSearched, setUsersSearched] = useState(false);
 
   const [teams, setTeams] = useState<AdminManagedTeam[]>([]);
   const [teamsLoading, setTeamsLoading] = useState(false);
@@ -129,12 +140,22 @@ export function AdminControlsPanel({ mode = "admin" }: { mode?: ControlPanelMode
     setRegistrationOpen(payload.registrationOpen);
   }, []);
 
-  const loadUsers = useCallback(async () => {
+  const loadUsers = useCallback(async (rawQuery: string) => {
+    const query = rawQuery.trim();
+
+    if (!query) {
+      setUsers([]);
+      setTeamsById({});
+      setUsersSearched(false);
+      setUsersMessage("");
+      return;
+    }
+
     setUsersLoading(true);
     setUsersMessage("");
 
     try {
-      const response = await fetch("/api/admin/users", { cache: "no-store" });
+      const response = await fetch(`/api/admin/users?q=${encodeURIComponent(query)}`, { cache: "no-store" });
       const payload = (await response.json().catch(() => ({}))) as AdminUsersResponse;
 
       if (!response.ok) {
@@ -143,7 +164,13 @@ export function AdminControlsPanel({ mode = "admin" }: { mode?: ControlPanelMode
 
       setUsers(payload.users ?? []);
       setTeamsById(payload.teamsById ?? {});
+      setUsersSearched(true);
+      setLastUserSearchQuery(query);
+      setUsersMessage(
+        `Loaded ${(payload.users ?? []).length} user${(payload.users ?? []).length === 1 ? "" : "s"} for "${query}".`,
+      );
     } catch (error) {
+      setUsersSearched(false);
       setUsersMessage(error instanceof Error ? error.message : "Unable to load user directory.");
     } finally {
       setUsersLoading(false);
@@ -173,15 +200,14 @@ export function AdminControlsPanel({ mode = "admin" }: { mode?: ControlPanelMode
 
   const loadAll = useCallback(async () => {
     setSettingsMessage("");
-    setUsersMessage("");
     setTeamsMessage("");
 
     try {
-      await Promise.all([loadSettings(), loadUsers()]);
+      await loadSettings();
     } catch (error) {
       setSettingsMessage(error instanceof Error ? error.message : "Unable to load control center state.");
     }
-  }, [loadSettings, loadUsers]);
+  }, [loadSettings]);
 
   useEffect(() => {
     void loadAll();
@@ -385,6 +411,68 @@ export function AdminControlsPanel({ mode = "admin" }: { mode?: ControlPanelMode
     }
   };
 
+  const handleClearUserSearch = () => {
+    setUserSearchQuery("");
+    setLastUserSearchQuery("");
+    setUsersSearched(false);
+    setUsersMessage("");
+    setUsers([]);
+    setTeamsById({});
+  };
+
+  const handleExportUsersCsv = () => {
+    if (users.length === 0) {
+      return;
+    }
+
+    const headers = [
+      "User ID",
+      "Name",
+      "Email",
+      "Role",
+      "Year",
+      "Department",
+      "Phone",
+      "Team Name",
+      "Join Code",
+      "Team Member Count",
+      "Registered At",
+    ];
+
+    const rows = users.map((managedUser) => {
+      const linkedTeam = managedUser.teamId ? teamsById[managedUser.teamId] : null;
+
+      return [
+        managedUser.id,
+        managedUser.name ?? "",
+        managedUser.email,
+        managedUser.role,
+        formatAcademicYear(managedUser.year),
+        managedUser.branch ?? "",
+        managedUser.phoneNumber ?? "",
+        linkedTeam?.name ?? "",
+        linkedTeam?.joinCode ?? "",
+        managedUser.teamId ? String(teamMemberCountByTeamId.get(managedUser.teamId) ?? 0) : "0",
+        new Date(managedUser.createdAt).toISOString(),
+      ]
+        .map((value) => toCsvCell(value))
+        .join(",");
+    });
+
+    const csv = [headers.map((value) => toCsvCell(value)).join(","), ...rows].join("\n");
+    const csvBlob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const downloadUrl = URL.createObjectURL(csvBlob);
+    const link = document.createElement("a");
+    const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+
+    link.href = downloadUrl;
+    link.setAttribute("download", `user-directory-${timestamp}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(downloadUrl);
+  };
+
   return (
     <section className="mx-auto mt-8 w-full max-w-5xl pb-12">
       <div className="rounded-2xl border border-white/10 bg-black/40 p-6 backdrop-blur-md shadow-glow sm:p-8">
@@ -442,21 +530,60 @@ export function AdminControlsPanel({ mode = "admin" }: { mode?: ControlPanelMode
             </div>
             <button
               type="button"
-              onClick={() => void loadUsers()}
-              disabled={usersLoading || Boolean(actionBusyKey)}
-              className="rounded-lg border border-phosphor bg-phosphor px-3 py-2 text-xs font-semibold text-black transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-phosphor"
+              onClick={handleExportUsersCsv}
+              disabled={usersLoading || users.length === 0}
+              className="rounded-lg border border-terminal-amber/80 bg-terminal-amber/10 px-3 py-2 text-xs font-semibold text-terminal-amber transition hover:bg-terminal-amber/20 disabled:cursor-not-allowed disabled:opacity-70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-terminal-amber"
             >
-              {usersLoading ? "Refreshing..." : "Refresh Users"}
+              Export CSV
             </button>
           </div>
 
+          <form
+            onSubmit={(event) => {
+              event.preventDefault();
+              void loadUsers(userSearchQuery);
+            }}
+            className="mt-4 flex flex-wrap items-center gap-2"
+          >
+            <input
+              type="text"
+              value={userSearchQuery}
+              onChange={(event) => setUserSearchQuery(event.target.value)}
+              placeholder="Search by name, email, or phone"
+              className="min-w-[16rem] flex-1 rounded-lg border border-white/10 bg-black/60 px-3 py-2 text-sm text-neutral-100 outline-none transition placeholder:text-neutral-500 focus:border-phosphor focus:ring-2 focus:ring-phosphor/30"
+            />
+
+            <button
+              type="submit"
+              disabled={usersLoading || Boolean(actionBusyKey) || userSearchQuery.trim().length < 2}
+              className="rounded-lg border border-phosphor bg-phosphor px-3 py-2 text-xs font-semibold text-black transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-phosphor"
+            >
+              {usersLoading ? "Searching..." : "Search User"}
+            </button>
+
+            <button
+              type="button"
+              onClick={handleClearUserSearch}
+              disabled={usersLoading || (!usersSearched && !userSearchQuery)}
+              className="rounded-lg border border-white/20 bg-black/50 px-3 py-2 text-xs font-semibold text-neutral-300 transition hover:border-phosphor/40 hover:text-phosphor disabled:cursor-not-allowed disabled:opacity-70"
+            >
+              Clear
+            </button>
+          </form>
+
           {usersMessage ? <p className="mt-3 text-sm text-neutral-300">{usersMessage}</p> : null}
+
+          {usersSearched && lastUserSearchQuery ? (
+            <p className="mt-2 text-xs text-neutral-400">Showing results for: {lastUserSearchQuery}</p>
+          ) : null}
 
           <div className="mt-4 grid gap-3">
             {usersLoading ? (
               <p className="text-sm text-neutral-400">Loading user directory...</p>
+            ) : !usersSearched ? (
+              <p className="text-sm text-neutral-400">Search user directory to load only matching users.</p>
             ) : users.length === 0 ? (
-              <p className="text-sm text-neutral-400">No users available yet.</p>
+              <p className="text-sm text-neutral-400">No users matched your search.</p>
             ) : (
               users.map((managedUser) => {
                 const linkedTeam = managedUser.teamId ? teamsById[managedUser.teamId] : null;
