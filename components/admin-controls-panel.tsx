@@ -107,6 +107,7 @@ export function AdminControlsPanel({ mode = "admin" }: { mode?: ControlPanelMode
   const [userSearchQuery, setUserSearchQuery] = useState("");
   const [lastUserSearchQuery, setLastUserSearchQuery] = useState("");
   const [usersSearched, setUsersSearched] = useState(false);
+  const [csvExporting, setCsvExporting] = useState(false);
 
   const [teams, setTeams] = useState<AdminManagedTeam[]>([]);
   const [teamsLoading, setTeamsLoading] = useState(false);
@@ -420,57 +421,90 @@ export function AdminControlsPanel({ mode = "admin" }: { mode?: ControlPanelMode
     setTeamsById({});
   };
 
-  const handleExportUsersCsv = () => {
-    if (users.length === 0) {
-      return;
+  const handleExportUsersCsv = async () => {
+    setCsvExporting(true);
+
+    try {
+      const response = await fetch("/api/admin/users?scope=all", { cache: "no-store" });
+      const payload = (await response.json().catch(() => ({}))) as AdminUsersResponse;
+
+      if (!response.ok) {
+        throw new Error(payload.error ?? "Unable to export users.");
+      }
+
+      const exportUsers = payload.users ?? [];
+      const exportTeamsById = payload.teamsById ?? {};
+
+      if (exportUsers.length === 0) {
+        setUsersMessage("No users available for export.");
+        return;
+      }
+
+      const exportTeamMemberCountByTeamId = new Map<string, number>();
+
+      for (const managedUser of exportUsers) {
+        if (!managedUser.teamId) {
+          continue;
+        }
+
+        exportTeamMemberCountByTeamId.set(
+          managedUser.teamId,
+          (exportTeamMemberCountByTeamId.get(managedUser.teamId) ?? 0) + 1,
+        );
+      }
+
+      const headers = [
+        "User ID",
+        "Name",
+        "Email",
+        "Role",
+        "Year",
+        "Department",
+        "Phone",
+        "Team Name",
+        "Join Code",
+        "Team Member Count",
+        "Registered At",
+      ];
+
+      const rows = exportUsers.map((managedUser) => {
+        const linkedTeam = managedUser.teamId ? exportTeamsById[managedUser.teamId] : null;
+
+        return [
+          managedUser.id,
+          managedUser.name ?? "",
+          managedUser.email,
+          managedUser.role,
+          formatAcademicYear(managedUser.year),
+          managedUser.branch ?? "",
+          managedUser.phoneNumber ?? "",
+          linkedTeam?.name ?? "",
+          linkedTeam?.joinCode ?? "",
+          managedUser.teamId ? String(exportTeamMemberCountByTeamId.get(managedUser.teamId) ?? 0) : "0",
+          new Date(managedUser.createdAt).toISOString(),
+        ]
+          .map((value) => toCsvCell(value))
+          .join(",");
+      });
+
+      const csv = [headers.map((value) => toCsvCell(value)).join(","), ...rows].join("\n");
+      const csvBlob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+      const downloadUrl = URL.createObjectURL(csvBlob);
+      const link = document.createElement("a");
+      const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+
+      link.href = downloadUrl;
+      link.setAttribute("download", `user-directory-all-${timestamp}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(downloadUrl);
+      setUsersMessage(`Exported ${exportUsers.length} users to CSV.`);
+    } catch (error) {
+      setUsersMessage(error instanceof Error ? error.message : "Unable to export users.");
+    } finally {
+      setCsvExporting(false);
     }
-
-    const headers = [
-      "User ID",
-      "Name",
-      "Email",
-      "Role",
-      "Year",
-      "Department",
-      "Phone",
-      "Team Name",
-      "Join Code",
-      "Team Member Count",
-      "Registered At",
-    ];
-
-    const rows = users.map((managedUser) => {
-      const linkedTeam = managedUser.teamId ? teamsById[managedUser.teamId] : null;
-
-      return [
-        managedUser.id,
-        managedUser.name ?? "",
-        managedUser.email,
-        managedUser.role,
-        formatAcademicYear(managedUser.year),
-        managedUser.branch ?? "",
-        managedUser.phoneNumber ?? "",
-        linkedTeam?.name ?? "",
-        linkedTeam?.joinCode ?? "",
-        managedUser.teamId ? String(teamMemberCountByTeamId.get(managedUser.teamId) ?? 0) : "0",
-        new Date(managedUser.createdAt).toISOString(),
-      ]
-        .map((value) => toCsvCell(value))
-        .join(",");
-    });
-
-    const csv = [headers.map((value) => toCsvCell(value)).join(","), ...rows].join("\n");
-    const csvBlob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-    const downloadUrl = URL.createObjectURL(csvBlob);
-    const link = document.createElement("a");
-    const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
-
-    link.href = downloadUrl;
-    link.setAttribute("download", `user-directory-${timestamp}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(downloadUrl);
   };
 
   return (
@@ -530,11 +564,11 @@ export function AdminControlsPanel({ mode = "admin" }: { mode?: ControlPanelMode
             </div>
             <button
               type="button"
-              onClick={handleExportUsersCsv}
-              disabled={usersLoading || users.length === 0}
+              onClick={() => void handleExportUsersCsv()}
+              disabled={usersLoading || csvExporting}
               className="rounded-lg border border-terminal-amber/80 bg-terminal-amber/10 px-3 py-2 text-xs font-semibold text-terminal-amber transition hover:bg-terminal-amber/20 disabled:cursor-not-allowed disabled:opacity-70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-terminal-amber"
             >
-              Export CSV
+              {csvExporting ? "Exporting..." : "Export CSV"}
             </button>
           </div>
 

@@ -16,50 +16,25 @@ export async function GET(request: NextRequest) {
       throw new ApiError(403, "Only organizers and admins can access user management.");
     }
 
+    const scope = request.nextUrl.searchParams.get("scope")?.trim().toLowerCase();
+    const includeAllUsers = scope === "all";
     const query = request.nextUrl.searchParams.get("q")?.trim() ?? "";
 
-    if (!query) {
+    if (!includeAllUsers && !query) {
       return NextResponse.json({
         users: [],
         teamsById: {},
       });
     }
 
-    if (query.length < 2) {
+    if (!includeAllUsers && query.length < 2) {
       throw new ApiError(400, "Enter at least 2 characters to search users.");
     }
 
     const phoneQuery = query.replace(/[^0-9]/g, "");
 
-    const whereClauses: Prisma.UserWhereInput[] = [
-      {
-        email: {
-          contains: query,
-          mode: "insensitive",
-        },
-      },
-      {
-        name: {
-          contains: query,
-          mode: "insensitive",
-        },
-      },
-    ];
-
-    if (phoneQuery.length >= 3) {
-      whereClauses.push({
-        phoneNumber: {
-          contains: phoneQuery,
-        },
-      });
-    }
-
-    const users = await prisma.user.findMany({
-      where: {
-        OR: whereClauses,
-      },
+    const userQueryOptions: Prisma.UserFindManyArgs = {
       orderBy: { createdAt: "desc" },
-      take: 25,
       select: {
         id: true,
         name: true,
@@ -71,7 +46,39 @@ export async function GET(request: NextRequest) {
         createdAt: true,
         teamId: true,
       },
-    });
+    };
+
+    if (!includeAllUsers) {
+      const whereClauses: Prisma.UserWhereInput[] = [
+        {
+          email: {
+            contains: query,
+            mode: "insensitive",
+          },
+        },
+        {
+          name: {
+            contains: query,
+            mode: "insensitive",
+          },
+        },
+      ];
+
+      if (phoneQuery.length >= 3) {
+        whereClauses.push({
+          phoneNumber: {
+            contains: phoneQuery,
+          },
+        });
+      }
+
+      userQueryOptions.where = {
+        OR: whereClauses,
+      };
+      userQueryOptions.take = 25;
+    }
+
+    const users = await prisma.user.findMany(userQueryOptions);
 
     const uniqueTeamIds = Array.from(new Set(users.map((user) => user.teamId).filter(Boolean))) as string[];
 
