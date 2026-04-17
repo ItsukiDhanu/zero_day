@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { JetBrains_Mono } from "next/font/google";
 import { RouteTransitionShell } from "@/components/route-transition-shell";
+import { HACKATHON_FOOTER_LABEL } from "@/lib/hackathon-config";
 import "./globals.css";
 
 const jetbrainsMono = JetBrains_Mono({
@@ -25,8 +26,6 @@ export default function RootLayout({
 }: Readonly<{
   children: ReactNode;
 }>) {
-  const eventLabel = "29 April 2026 • 9:00 AM IST";
-
   return (
     <html lang="en" className="h-full bg-neutral-950">
       <body
@@ -40,7 +39,7 @@ export default function RootLayout({
           <footer className="border-t border-white/10 bg-black/40 backdrop-blur-md">
             <div className="mx-auto flex w-full max-w-6xl flex-col gap-3 px-4 py-4 text-xs text-neutral-400 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
               <p>
-                ZERO_DAY // HACKATHON STARTS <span className="text-terminal-amber">{eventLabel}</span>
+                ZERO_DAY // HACKATHON STARTS <span className="text-terminal-amber">{HACKATHON_FOOTER_LABEL}</span>
               </p>
                 <p className="text-neutral-300">
                   Contact for queries: {" "}

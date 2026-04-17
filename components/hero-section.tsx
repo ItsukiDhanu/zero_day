@@ -2,6 +2,11 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import {
+  HACKATHON_COUNTDOWN_TARGET_LABEL,
+  HACKATHON_START_LABEL,
+  HACKATHON_START_MS,
+} from "@/lib/hackathon-config";
 
 const rotatingCommands = [
   "./register --squad ready --mode blitz",
@@ -15,8 +20,6 @@ const TYPE_SPEED_MS = 42;
 const DELETE_SPEED_MS = 24;
 const HOLD_COMMAND_MS = 1400;
 const NEXT_COMMAND_DELAY_MS = 260;
-const HACKATHON_START_IST = "2026-05-13T09:00:00+05:30";
-const HACKATHON_START_MS = new Date(HACKATHON_START_IST).getTime();
 
 const SECOND_MS = 1000;
 const MINUTE_MS = 60 * SECOND_MS;
@@ -116,7 +119,7 @@ export function HeroSection() {
           <span className="block text-phosphor">From first commit to final pitch before dawn.</span>
         </h1>
         <p className="mt-3 text-xs font-semibold uppercase tracking-[0.2em] text-terminal-amber sm:text-sm">
-          Hackathon starts 13 May, 9:00 AM IST
+          Hackathon starts {HACKATHON_START_LABEL}
         </p>
         <p className="mt-5 max-w-2xl text-sm leading-relaxed text-neutral-300 sm:text-base">
           Zero Day is built for teams who love pressure and pace. Register in seconds, lock your squad,
@@ -135,7 +138,7 @@ export function HeroSection() {
             <p className="text-[10px] uppercase tracking-[0.2em] text-neutral-500">timer://hackathon-start</p>
             <div className="mt-2 flex items-center gap-2 text-xs font-semibold sm:text-sm">
               <span className="text-neutral-500">$</span>
-              <span className="text-terminal-amber">./countdown --to 13-may-09:00-ist</span>
+              <span className="text-terminal-amber">{`./countdown --to ${HACKATHON_COUNTDOWN_TARGET_LABEL}`}</span>
             </div>
             <p className={`mt-1 text-sm font-semibold ${countdown.isLive ? "text-phosphor" : "text-terminal-amber"}`}>
               {countdown.label}
