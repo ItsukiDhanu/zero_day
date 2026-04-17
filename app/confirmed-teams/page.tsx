@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
 import { CommandPalette } from "@/components/command-palette";
 import { prisma } from "@/lib/prisma";
 import { decodeSessionToken } from "@/lib/session";
@@ -18,14 +19,19 @@ function displayMemberName(member: { name: string | null; email: string }) {
 export default async function ConfirmedTeamsPage() {
   const cookieStore = await cookies();
   const sessionToken = cookieStore.get("zd_session")?.value;
-  const isAuthenticated = Boolean(decodeSessionToken(sessionToken));
+  const userId = decodeSessionToken(sessionToken);
+
+  if (!userId) {
+    redirect("/login?next=/confirmed-teams");
+  }
+
+  const isAuthenticated = true;
 
   const teams = await prisma.team.findMany({
     orderBy: { createdAt: "asc" },
     select: {
       id: true,
       name: true,
-      joinCode: true,
       createdAt: true,
       _count: {
         select: {
@@ -73,29 +79,12 @@ export default async function ConfirmedTeamsPage() {
               >
                 Home
               </Link>
-              {!isAuthenticated ? (
-                <>
-                  <Link
-                    href="/register"
-                    className="rounded-md border border-white/15 bg-black/40 px-2.5 py-1 text-neutral-300 transition hover:border-phosphor/40 hover:text-phosphor"
-                  >
-                    Register
-                  </Link>
-                  <Link
-                    href="/login"
-                    className="rounded-md border border-white/15 bg-black/40 px-2.5 py-1 text-neutral-300 transition hover:border-phosphor/40 hover:text-phosphor"
-                  >
-                    Login
-                  </Link>
-                </>
-              ) : (
-                <Link
-                  href="/dashboard"
-                  className="rounded-md border border-white/15 bg-black/40 px-2.5 py-1 text-neutral-300 transition hover:border-phosphor/40 hover:text-phosphor"
-                >
-                  Dashboard
-                </Link>
-              )}
+              <Link
+                href="/dashboard"
+                className="rounded-md border border-white/15 bg-black/40 px-2.5 py-1 text-neutral-300 transition hover:border-phosphor/40 hover:text-phosphor"
+              >
+                Dashboard
+              </Link>
               <Link
                 href="/teams"
                 className="rounded-md border border-white/15 bg-black/40 px-2.5 py-1 text-neutral-300 transition hover:border-terminal-amber/60 hover:text-terminal-amber"
@@ -114,7 +103,7 @@ export default async function ConfirmedTeamsPage() {
 
         <section className="mx-auto mt-10 w-full max-w-5xl pb-12">
           <div className="rounded-2xl border border-white/10 bg-black/40 p-6 backdrop-blur-md shadow-glow sm:p-8">
-            <p className="text-xs uppercase tracking-[0.2em] text-phosphor/90">Public Team Roster</p>
+            <p className="text-xs uppercase tracking-[0.2em] text-phosphor/90">Confirmed Team Roster</p>
             <h1 className="mt-2 text-2xl font-semibold text-neutral-100 sm:text-3xl">Confirmed Teams (2-4 Members)</h1>
 
             <div className="mt-5 grid gap-4 sm:grid-cols-2">
@@ -139,9 +128,7 @@ export default async function ConfirmedTeamsPage() {
                     <div className="flex flex-wrap items-center justify-between gap-3">
                       <div>
                         <h2 className="text-lg font-semibold text-neutral-100">{team.name}</h2>
-                        <p className="mt-1 text-xs text-neutral-400">
-                          Join Code: {team.joinCode} • {team._count.members}/4 members
-                        </p>
+                        <p className="mt-1 text-xs text-neutral-400">{team._count.members}/4 members</p>
                       </div>
                       <span className="rounded-md border border-phosphor/40 bg-phosphor/10 px-2 py-1 text-[11px] font-semibold text-phosphor">
                         CONFIRMED
