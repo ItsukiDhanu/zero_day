@@ -2,7 +2,7 @@ import Link from "next/link";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { CommandPalette } from "@/components/command-palette";
-import { TeamRepositorySubmitForm } from "@/components/team-repository-submit-form";
+import { TeamRepositorySubmitForm } from "@/components/team-repository-form";
 import { prisma } from "@/lib/prisma";
 import { decodeSessionToken } from "@/lib/session";
 import { getOrCreateSiteSettings } from "@/lib/site-settings";
