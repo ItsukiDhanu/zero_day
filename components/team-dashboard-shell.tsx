@@ -336,13 +336,6 @@ export function TeamDashboardShell({
                 </button>
 
                 {joinMessage ? <p className="mt-3 text-sm text-neutral-300">{joinMessage}</p> : null}
-
-                <div className="mt-4 rounded-lg border border-white/10 bg-black/60 p-3">
-                  <p className="text-xs uppercase tracking-[0.2em] text-neutral-400">Remaining Slots</p>
-                  <p className={`mt-2 text-xl font-semibold ${slotCount <= 1 ? "text-terminal-amber" : "text-phosphor"}`}>
-                    {slotCount}
-                  </p>
-                </div>
               </form>
             ) : (
               <div className="rounded-xl border border-white/10 bg-black/40 p-4 text-sm text-neutral-300 backdrop-blur-md">
