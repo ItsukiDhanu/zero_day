@@ -51,7 +51,7 @@ export function TeamDashboardShell({
   const [registrationOpen] = useState(initialRegistrationOpen);
   const [createStatus, setCreateStatus] = useState<"idle" | "submitting">("idle");
   const [joinStatus, setJoinStatus] = useState<"idle" | "submitting">("idle");
-  const [teamActionView, setTeamActionView] = useState<"create" | "join">("create");
+  const [teamActionView, setTeamActionView] = useState<"create" | "join" | null>(null);
   const [createMessage, setCreateMessage] = useState("");
   const [joinMessage, setJoinMessage] = useState("");
 
@@ -298,7 +298,7 @@ export function TeamDashboardShell({
 
                 {createMessage ? <p className="mt-3 text-sm text-neutral-300">{createMessage}</p> : null}
               </form>
-            ) : (
+            ) : teamActionView === "join" ? (
               <form
                 onSubmit={handleJoin}
                 className="rounded-xl border border-terminal-amber/40 bg-terminal-amber/5 p-4 backdrop-blur-md"
@@ -344,6 +344,10 @@ export function TeamDashboardShell({
                   </p>
                 </div>
               </form>
+            ) : (
+              <div className="rounded-xl border border-white/10 bg-black/40 p-4 text-sm text-neutral-300 backdrop-blur-md">
+                Pick an action card above to continue with team setup.
+              </div>
             )}
           </div>
         )}
