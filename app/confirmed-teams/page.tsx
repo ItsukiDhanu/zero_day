@@ -141,6 +141,14 @@ export default async function ConfirmedTeamsPage() {
               >
                 Confirmed Teams
               </Link>
+              {currentUser.role === "ADMIN" || currentUser.role === "ORGANIZER" ? (
+                <Link
+                  href="/judging"
+                  className="rounded-md border border-white/15 bg-black/40 px-2.5 py-1 text-neutral-300 transition hover:border-phosphor/40 hover:text-phosphor"
+                >
+                  Judging
+                </Link>
+              ) : null}
             </nav>
           </div>
         </header>

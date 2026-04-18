@@ -76,6 +76,13 @@ const commandActions: CommandAction[] = [
     hint: "Open participant dashboard",
     path: "/dashboard",
   },
+  {
+    id: "judging",
+    label: "Judging Board",
+    section: "Workspace",
+    hint: "Open organizer/admin judging page",
+    path: "/judging",
+  },
 ];
 
 const CommandPaletteDialog = dynamic(

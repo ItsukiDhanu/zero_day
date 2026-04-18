@@ -51,6 +51,7 @@ model Team {
   joinCode  String @unique @map("join_code") @db.Char(6)
   repositoryUrl String? @map("repository_url")
   members   User[] @relation("TeamMembership")
+  judgingScore TeamJudgingScore?
 
   captainId String? @map("captain_id") @db.Uuid
   captain   User?   @relation("TeamCaptain", fields: [captainId], references: [id], onDelete: SetNull)
@@ -62,6 +63,24 @@ model Team {
 
   // Prisma cannot enforce relation-cardinality max(4) in schema DSL.
   // Enforce 4-member cap in app logic and/or a SQL trigger/check in migration.
+}
+
+model TeamJudgingScore {
+  id                    String   @id @default(uuid()) @db.Uuid
+  teamId                String   @unique @map("team_id") @db.Uuid
+  innovationScore       Int      @default(0) @map("innovation_score")
+  impactScore           Int      @default(0) @map("impact_score")
+  implementationScore   Int      @default(0) @map("implementation_score")
+  presentationScore     Int      @default(0) @map("presentation_score")
+  ruleAdherenceScore    Int      @default(0) @map("rule_adherence_score")
+  comments              String?
+  updatedByEmail        String?  @map("updated_by_email")
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  team Team @relation(fields: [teamId], references: [id], onDelete: Cascade)
+
+  @@index([updatedAt])
 }
 
 model SiteSettings {
