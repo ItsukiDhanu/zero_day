@@ -154,12 +154,13 @@ export function JudgingBoard({ initialTeams }: JudgingBoardProps) {
   const [savingTeamId, setSavingTeamId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Record<string, string>>({});
   const [query, setQuery] = useState("");
+  const hasSearchQuery = query.trim().length > 0;
 
   const filteredTeams = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
 
     if (!normalizedQuery) {
-      return teams;
+      return [];
     }
 
     return teams.filter((team) => {
@@ -320,7 +321,11 @@ export function JudgingBoard({ initialTeams }: JudgingBoardProps) {
       </div>
 
       <div className="mt-4 grid gap-4">
-        {filteredTeams.length === 0 ? (
+        {!hasSearchQuery ? (
+          <p className="rounded-xl border border-white/10 bg-black/60 p-4 text-sm text-neutral-300">
+            Type a team name or member name to start searching.
+          </p>
+        ) : filteredTeams.length === 0 ? (
           <p className="rounded-xl border border-white/10 bg-black/60 p-4 text-sm text-neutral-300">
             No teams matched your search query.
           </p>
