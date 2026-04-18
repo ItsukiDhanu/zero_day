@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { KeyboardEvent, useCallback, useEffect, useMemo, useState } from "react";
 
 type TeamMemberSnapshot = {
   id: string;
@@ -71,6 +71,13 @@ type TeamDetachActionResponse = AdminActionResponse & {
   };
 };
 
+type UserSearchSuggestion = {
+  id: string;
+  value: string;
+  label: string;
+  kind: "Name" | "Email" | "Phone";
+};
+
 const ROLE_OPTIONS = ["PARTICIPANT", "ORGANIZER", "ADMIN"] as const;
 type ControlPanelMode = "admin" | "organizer";
 
@@ -107,6 +114,9 @@ export function AdminControlsPanel({ mode = "admin" }: { mode?: ControlPanelMode
   const [usersLoading, setUsersLoading] = useState(false);
   const [usersMessage, setUsersMessage] = useState("");
   const [userSearchQuery, setUserSearchQuery] = useState("");
+  const [userSearchSuggestions, setUserSearchSuggestions] = useState<UserSearchSuggestion[]>([]);
+  const [userSearchSuggestionsLoading, setUserSearchSuggestionsLoading] = useState(false);
+  const [selectedUserSuggestionIndex, setSelectedUserSuggestionIndex] = useState(-1);
   const [lastUserSearchQuery, setLastUserSearchQuery] = useState("");
   const [usersSearched, setUsersSearched] = useState(false);
   const [csvExporting, setCsvExporting] = useState(false);
@@ -220,6 +230,98 @@ export function AdminControlsPanel({ mode = "admin" }: { mode?: ControlPanelMode
   useEffect(() => {
     void loadAll();
   }, [loadAll]);
+
+  useEffect(() => {
+    setSelectedUserSuggestionIndex(-1);
+  }, [userSearchQuery]);
+
+  useEffect(() => {
+    const query = userSearchQuery.trim();
+
+    if (query.length < 2) {
+      setUserSearchSuggestions([]);
+      setUserSearchSuggestionsLoading(false);
+      return;
+    }
+
+    let isCancelled = false;
+    const timer = window.setTimeout(async () => {
+      setUserSearchSuggestionsLoading(true);
+
+      try {
+        const response = await fetch(`/api/admin/users?q=${encodeURIComponent(query)}`, { cache: "no-store" });
+        const payload = (await response.json().catch(() => ({}))) as AdminUsersResponse;
+
+        if (!response.ok) {
+          throw new Error(payload.error ?? "Unable to load user suggestions.");
+        }
+
+        if (isCancelled) {
+          return;
+        }
+
+        const normalizedQuery = query.toLowerCase();
+        const phoneQuery = query.replace(/[^0-9]/g, "");
+        const suggestions: UserSearchSuggestion[] = [];
+
+        for (const managedUser of payload.users ?? []) {
+          const name = managedUser.name?.trim() ?? "";
+          const email = managedUser.email.trim();
+          const phone = managedUser.phoneNumber?.trim() ?? "";
+
+          if (name && name.toLowerCase().includes(normalizedQuery)) {
+            suggestions.push({
+              id: `name:${name.toLowerCase()}`,
+              value: name,
+              label: `${name} (${email})`,
+              kind: "Name",
+            });
+          }
+
+          if (email.toLowerCase().includes(normalizedQuery)) {
+            suggestions.push({
+              id: `email:${email.toLowerCase()}`,
+              value: email,
+              label: email,
+              kind: "Email",
+            });
+          }
+
+          if (phone && phoneQuery.length >= 3 && phone.includes(phoneQuery)) {
+            suggestions.push({
+              id: `phone:${phone}`,
+              value: phone,
+              label: `${phone} (${email})`,
+              kind: "Phone",
+            });
+          }
+        }
+
+        const deduped = new Map<string, UserSearchSuggestion>();
+
+        for (const suggestion of suggestions) {
+          if (!deduped.has(suggestion.id)) {
+            deduped.set(suggestion.id, suggestion);
+          }
+        }
+
+        setUserSearchSuggestions(Array.from(deduped.values()).slice(0, 8));
+      } catch {
+        if (!isCancelled) {
+          setUserSearchSuggestions([]);
+        }
+      } finally {
+        if (!isCancelled) {
+          setUserSearchSuggestionsLoading(false);
+        }
+      }
+    }, 200);
+
+    return () => {
+      isCancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [userSearchQuery]);
 
   const handleToggleRegistration = async () => {
     setSettingsBusy(true);
@@ -463,11 +565,59 @@ export function AdminControlsPanel({ mode = "admin" }: { mode?: ControlPanelMode
 
   const handleClearUserSearch = () => {
     setUserSearchQuery("");
+    setUserSearchSuggestions([]);
+    setUserSearchSuggestionsLoading(false);
+    setSelectedUserSuggestionIndex(-1);
     setLastUserSearchQuery("");
     setUsersSearched(false);
     setUsersMessage("");
     setUsers([]);
     setTeamsById({});
+  };
+
+  const applyUserSearchSuggestion = (value: string) => {
+    setUserSearchQuery(value);
+    setUserSearchSuggestions([]);
+    setUserSearchSuggestionsLoading(false);
+    setSelectedUserSuggestionIndex(-1);
+    void loadUsers(value);
+  };
+
+  const handleUserSearchKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+    if (userSearchSuggestions.length === 0) {
+      return;
+    }
+
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      setSelectedUserSuggestionIndex((current) => {
+        const next = current + 1;
+        return next >= userSearchSuggestions.length ? 0 : next;
+      });
+      return;
+    }
+
+    if (event.key === "ArrowUp") {
+      event.preventDefault();
+      setSelectedUserSuggestionIndex((current) => {
+        if (current <= 0) {
+          return userSearchSuggestions.length - 1;
+        }
+
+        return current - 1;
+      });
+      return;
+    }
+
+    if (event.key === "Enter" && selectedUserSuggestionIndex >= 0) {
+      event.preventDefault();
+      applyUserSearchSuggestion(userSearchSuggestions[selectedUserSuggestionIndex].value);
+      return;
+    }
+
+    if (event.key === "Escape") {
+      setSelectedUserSuggestionIndex(-1);
+    }
   };
 
   const handleExportUsersCsv = async () => {
@@ -665,6 +815,7 @@ export function AdminControlsPanel({ mode = "admin" }: { mode?: ControlPanelMode
               type="text"
               value={userSearchQuery}
               onChange={(event) => setUserSearchQuery(event.target.value)}
+              onKeyDown={handleUserSearchKeyDown}
               placeholder="Search by name, email, or phone"
               className="min-w-[16rem] flex-1 rounded-lg border border-white/10 bg-black/60 px-3 py-2 text-sm text-neutral-100 outline-none transition placeholder:text-neutral-500 focus:border-phosphor focus:ring-2 focus:ring-phosphor/30"
             />
@@ -686,6 +837,37 @@ export function AdminControlsPanel({ mode = "admin" }: { mode?: ControlPanelMode
               Clear
             </button>
           </form>
+
+          {userSearchQuery.trim().length >= 2 && (userSearchSuggestionsLoading || userSearchSuggestions.length > 0) ? (
+            <div className="mt-3 rounded-lg border border-white/10 bg-black/60 p-2">
+              <p className="px-2 pb-2 text-[11px] uppercase tracking-[0.16em] text-neutral-500">Suggestions</p>
+
+              {userSearchSuggestionsLoading ? (
+                <p className="px-2 pb-1 text-xs text-neutral-400">Loading suggestions...</p>
+              ) : (
+                <ul className="grid gap-1">
+                  {userSearchSuggestions.map((suggestion, index) => (
+                    <li key={suggestion.id}>
+                      <button
+                        type="button"
+                        onClick={() => applyUserSearchSuggestion(suggestion.value)}
+                        className={`flex w-full items-center justify-between rounded-md px-2 py-2 text-left text-sm transition ${
+                          index === selectedUserSuggestionIndex
+                            ? "bg-phosphor/15 text-phosphor"
+                            : "bg-black/40 text-neutral-200 hover:bg-white/10"
+                        }`}
+                      >
+                        <span className="truncate">{suggestion.label}</span>
+                        <span className="ml-3 shrink-0 rounded border border-white/15 px-1.5 py-0.5 text-[10px] uppercase tracking-[0.12em] text-neutral-400">
+                          {suggestion.kind}
+                        </span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          ) : null}
 
           {usersMessage ? <p className="mt-3 text-sm text-neutral-300">{usersMessage}</p> : null}
 
