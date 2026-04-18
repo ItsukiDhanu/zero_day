@@ -41,7 +41,11 @@ const rules = [
   {
     title: "Judging and Decisions",
     points: [
-      "Projects are judged on innovation, impact, implementation quality, and presentation.",
+      "Innovation: novelty and originality of the idea.",
+      "Impact: relevance, usefulness, and practical value.",
+      "Implementation: technical execution and code quality.",
+      "Presentation: demo clarity and communication.",
+      "Rule Adherence: fair play, repository readiness, and team collaboration.",
       "Teams may be asked for a live demo, walkthrough, and technical Q&A.",
       "Organizer and jury decisions are final.",
     ],

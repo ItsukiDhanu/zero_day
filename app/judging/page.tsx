@@ -396,8 +396,8 @@ export default async function JudgingPage() {
               Team Evaluation Board (100 Points)
             </h1>
             <p className="mt-4 text-sm leading-relaxed text-neutral-300 sm:text-base">
-              Scores are mapped to the rules page rubric. Each criterion is scored out of 20: Innovation,
-              Impact, Implementation, Presentation, and Rule Adherence.
+              Scores are mapped to the rules page rubric across Innovation, Impact, Implementation,
+              Presentation, and Rule Adherence.
             </p>
 
             <div className="mt-5 grid gap-4 sm:grid-cols-3">
@@ -418,11 +418,11 @@ export default async function JudgingPage() {
             <div className="mt-6 rounded-xl border border-white/10 bg-black/60 p-4">
               <p className="text-xs uppercase tracking-[0.18em] text-neutral-400">Rubric Reference</p>
               <ul className="mt-3 list-disc space-y-2 pl-5 text-sm text-neutral-300">
-                <li>Innovation (0-20): novelty and originality of the idea.</li>
-                <li>Impact (0-20): relevance, usefulness, and practical value.</li>
-                <li>Implementation (0-20): technical execution and code quality.</li>
-                <li>Presentation (0-20): demo clarity and communication.</li>
-                <li>Rule Adherence (0-20): fair play, repository readiness, and team collaboration.</li>
+                <li>Innovation: novelty and originality of the idea.</li>
+                <li>Impact: relevance, usefulness, and practical value.</li>
+                <li>Implementation: technical execution and code quality.</li>
+                <li>Presentation: demo clarity and communication.</li>
+                <li>Rule Adherence: fair play, repository readiness, and team collaboration.</li>
               </ul>
             </div>
 
