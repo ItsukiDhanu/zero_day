@@ -51,6 +51,7 @@ export function TeamDashboardShell({
   const [registrationOpen] = useState(initialRegistrationOpen);
   const [createStatus, setCreateStatus] = useState<"idle" | "submitting">("idle");
   const [joinStatus, setJoinStatus] = useState<"idle" | "submitting">("idle");
+  const [teamActionView, setTeamActionView] = useState<"create" | "join">("create");
   const [createMessage, setCreateMessage] = useState("");
   const [joinMessage, setJoinMessage] = useState("");
 
@@ -235,76 +236,115 @@ export function TeamDashboardShell({
             ) : null}
           </div>
         ) : (
-          <div className="mt-7 grid gap-5 lg:grid-cols-2">
-            <form
-              onSubmit={handleCreate}
-              className="rounded-xl border border-white/10 bg-black/40 p-4 backdrop-blur-md"
-            >
-              <p className="text-sm font-semibold text-phosphor">Create Team</p>
-              <label className="mt-4 grid gap-2 text-sm text-neutral-200">
-                <span>Team Name</span>
-                <input
-                  value={teamName}
-                  onChange={(event) => setTeamName(event.target.value)}
-                  className="rounded-lg border border-white/10 bg-black/60 px-3 py-2 text-neutral-100 outline-none transition focus:border-phosphor focus:ring-2 focus:ring-phosphor/30"
-                  placeholder="Red Team Raptors"
-                  disabled={Boolean(team) || !user || createStatus === "submitting"}
-                />
-              </label>
-
+          <div className="mt-7 space-y-5">
+            <div className="grid gap-4 md:grid-cols-2">
               <button
-                type="submit"
-                disabled={Boolean(team) || !user || createStatus === "submitting"}
-                className="mt-4 rounded-lg border border-phosphor bg-phosphor px-4 py-2 text-sm font-semibold text-black transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-phosphor"
+                type="button"
+                onClick={() => setTeamActionView("create")}
+                className={`rounded-xl border p-4 text-left transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-phosphor ${
+                  teamActionView === "create"
+                    ? "border-phosphor/60 bg-phosphor/10"
+                    : "border-white/10 bg-black/40 hover:border-phosphor/40"
+                }`}
               >
-                {createStatus === "submitting" ? "Generating..." : "Generate 6-Char Code"}
-              </button>
-
-              {createMessage ? <p className="mt-3 text-sm text-neutral-300">{createMessage}</p> : null}
-            </form>
-
-            <form onSubmit={handleJoin} className="rounded-xl border border-white/10 bg-black/40 p-4 backdrop-blur-md">
-              <p className="text-sm font-semibold text-terminal-amber">Join Team</p>
-              <label className="mt-4 grid gap-2 text-sm text-neutral-200">
-                <span>Team Name</span>
-                <input
-                  value={joinTeamName}
-                  onChange={(event) => setJoinTeamName(event.target.value)}
-                  className="rounded-lg border border-white/10 bg-black/60 px-3 py-2 text-neutral-100 outline-none transition focus:border-terminal-amber focus:ring-2 focus:ring-terminal-amber/30"
-                  placeholder="Red Team Raptors"
-                  disabled={Boolean(team) || !user || joinStatus === "submitting"}
-                />
-              </label>
-
-              <label className="mt-4 grid gap-2 text-sm text-neutral-200">
-                <span>Enter Join Code</span>
-                <input
-                  value={joinCode}
-                  maxLength={6}
-                  onChange={(event) => setJoinCode(event.target.value.toUpperCase())}
-                  className="rounded-lg border border-white/10 bg-black/60 px-3 py-2 text-neutral-100 outline-none transition focus:border-terminal-amber focus:ring-2 focus:ring-terminal-amber/30"
-                  placeholder="A1B2C3"
-                  disabled={Boolean(team) || !user || joinStatus === "submitting"}
-                />
-              </label>
-
-              <button
-                type="submit"
-                disabled={Boolean(team) || !user || joinStatus === "submitting"}
-                className="mt-4 rounded-lg border border-terminal-amber/80 bg-terminal-amber/10 px-4 py-2 text-sm font-semibold text-terminal-amber transition hover:bg-terminal-amber/20 disabled:cursor-not-allowed disabled:opacity-70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-terminal-amber"
-              >
-                {joinStatus === "submitting" ? "Joining..." : "Join Team"}
-              </button>
-
-              {joinMessage ? <p className="mt-3 text-sm text-neutral-300">{joinMessage}</p> : null}
-
-              <div className="mt-4 rounded-lg border border-white/10 bg-black/60 p-3">
-                <p className="text-xs uppercase tracking-[0.2em] text-neutral-400">Remaining Slots</p>
-                <p className={`mt-2 text-xl font-semibold ${slotCount <= 1 ? "text-terminal-amber" : "text-phosphor"}`}>
-                  {slotCount}
+                <p className="text-xs uppercase tracking-[0.2em] text-phosphor/90">Action 01</p>
+                <h3 className="mt-2 text-lg font-semibold text-neutral-100">Create Team</h3>
+                <p className="mt-2 text-sm text-neutral-300">
+                  Start a new squad and generate a private 6-character join code for teammates.
                 </p>
-              </div>
-            </form>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setTeamActionView("join")}
+                className={`rounded-xl border p-4 text-left transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-terminal-amber ${
+                  teamActionView === "join"
+                    ? "border-terminal-amber/70 bg-terminal-amber/10"
+                    : "border-white/10 bg-black/40 hover:border-terminal-amber/40"
+                }`}
+              >
+                <p className="text-xs uppercase tracking-[0.2em] text-terminal-amber">Action 02</p>
+                <h3 className="mt-2 text-lg font-semibold text-neutral-100">Join Team</h3>
+                <p className="mt-2 text-sm text-neutral-300">
+                  Enter the team name and join code shared by your captain to join an existing team.
+                </p>
+              </button>
+            </div>
+
+            {teamActionView === "create" ? (
+              <form
+                onSubmit={handleCreate}
+                className="rounded-xl border border-phosphor/40 bg-phosphor/5 p-4 backdrop-blur-md"
+              >
+                <p className="text-sm font-semibold text-phosphor">Create Team</p>
+                <label className="mt-4 grid gap-2 text-sm text-neutral-200">
+                  <span>Team Name</span>
+                  <input
+                    value={teamName}
+                    onChange={(event) => setTeamName(event.target.value)}
+                    className="rounded-lg border border-white/10 bg-black/60 px-3 py-2 text-neutral-100 outline-none transition focus:border-phosphor focus:ring-2 focus:ring-phosphor/30"
+                    placeholder="Red Team Raptors"
+                    disabled={Boolean(team) || !user || createStatus === "submitting" || !registrationOpen}
+                  />
+                </label>
+
+                <button
+                  type="submit"
+                  disabled={Boolean(team) || !user || createStatus === "submitting" || !registrationOpen}
+                  className="mt-4 rounded-lg border border-phosphor bg-phosphor px-4 py-2 text-sm font-semibold text-black transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-phosphor"
+                >
+                  {createStatus === "submitting" ? "Generating..." : "Generate 6-Char Code"}
+                </button>
+
+                {createMessage ? <p className="mt-3 text-sm text-neutral-300">{createMessage}</p> : null}
+              </form>
+            ) : (
+              <form
+                onSubmit={handleJoin}
+                className="rounded-xl border border-terminal-amber/40 bg-terminal-amber/5 p-4 backdrop-blur-md"
+              >
+                <p className="text-sm font-semibold text-terminal-amber">Join Team</p>
+                <label className="mt-4 grid gap-2 text-sm text-neutral-200">
+                  <span>Team Name</span>
+                  <input
+                    value={joinTeamName}
+                    onChange={(event) => setJoinTeamName(event.target.value)}
+                    className="rounded-lg border border-white/10 bg-black/60 px-3 py-2 text-neutral-100 outline-none transition focus:border-terminal-amber focus:ring-2 focus:ring-terminal-amber/30"
+                    placeholder="Red Team Raptors"
+                    disabled={Boolean(team) || !user || joinStatus === "submitting" || !registrationOpen}
+                  />
+                </label>
+
+                <label className="mt-4 grid gap-2 text-sm text-neutral-200">
+                  <span>Enter Join Code</span>
+                  <input
+                    value={joinCode}
+                    maxLength={6}
+                    onChange={(event) => setJoinCode(event.target.value.toUpperCase())}
+                    className="rounded-lg border border-white/10 bg-black/60 px-3 py-2 text-neutral-100 outline-none transition focus:border-terminal-amber focus:ring-2 focus:ring-terminal-amber/30"
+                    placeholder="A1B2C3"
+                    disabled={Boolean(team) || !user || joinStatus === "submitting" || !registrationOpen}
+                  />
+                </label>
+
+                <button
+                  type="submit"
+                  disabled={Boolean(team) || !user || joinStatus === "submitting" || !registrationOpen}
+                  className="mt-4 rounded-lg border border-terminal-amber/80 bg-terminal-amber/10 px-4 py-2 text-sm font-semibold text-terminal-amber transition hover:bg-terminal-amber/20 disabled:cursor-not-allowed disabled:opacity-70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-terminal-amber"
+                >
+                  {joinStatus === "submitting" ? "Joining..." : "Join Team"}
+                </button>
+
+                {joinMessage ? <p className="mt-3 text-sm text-neutral-300">{joinMessage}</p> : null}
+
+                <div className="mt-4 rounded-lg border border-white/10 bg-black/60 p-3">
+                  <p className="text-xs uppercase tracking-[0.2em] text-neutral-400">Remaining Slots</p>
+                  <p className={`mt-2 text-xl font-semibold ${slotCount <= 1 ? "text-terminal-amber" : "text-phosphor"}`}>
+                    {slotCount}
+                  </p>
+                </div>
+              </form>
+            )}
           </div>
         )}
       </div>
