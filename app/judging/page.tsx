@@ -37,6 +37,15 @@ function displayMemberName(member: { name: string | null; email: string }) {
   return emailPrefix || "Unnamed Participant";
 }
 
+function displayUpdaterName(name: string | null, email: string) {
+  if (name?.trim()) {
+    return name.trim();
+  }
+
+  const emailPrefix = email.split("@")[0]?.trim();
+  return emailPrefix || email;
+}
+
 export default async function JudgingPage() {
   const cookieStore = await cookies();
   const sessionToken = cookieStore.get("zd_session")?.value;
@@ -109,6 +118,30 @@ export default async function JudgingPage() {
       })
     : [];
 
+  const updatedByEmails = Array.from(
+    new Set(
+      judgingScores
+        .map((judgingScore) => judgingScore.updatedByEmail?.trim())
+        .filter((email): email is string => Boolean(email)),
+    ),
+  );
+
+  const judges = updatedByEmails.length
+    ? await prisma.user.findMany({
+        where: {
+          email: {
+            in: updatedByEmails,
+          },
+        },
+        select: {
+          email: true,
+          name: true,
+        },
+      })
+    : [];
+
+  const judgeNameByEmail = new Map(judges.map((judge) => [judge.email.trim(), judge.name]));
+
   const judgingByTeamId = new Map(judgingScores.map((judgingScore) => [judgingScore.teamId, judgingScore]));
 
   const judgingTeams: JudgingTeamState[] = teams.map((team) => {
@@ -128,7 +161,12 @@ export default async function JudgingPage() {
             presentationScore: judgingScore.presentationScore,
             ruleAdherenceScore: judgingScore.ruleAdherenceScore,
             comments: judgingScore.comments,
-            updatedByEmail: judgingScore.updatedByEmail,
+            updatedByName: judgingScore.updatedByEmail
+              ? displayUpdaterName(
+                  judgeNameByEmail.get(judgingScore.updatedByEmail.trim()) ?? null,
+                  judgingScore.updatedByEmail,
+                )
+              : null,
             updatedAt: judgingScore.updatedAt.toISOString(),
           }
         : null,

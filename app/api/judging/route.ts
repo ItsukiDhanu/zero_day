@@ -16,6 +16,15 @@ type TeamJudgingScoreUpsertResult = {
   updatedAt: Date;
 };
 
+function displayUserName(name: string | null, email: string) {
+  if (name?.trim()) {
+    return name.trim();
+  }
+
+  const emailPrefix = email.split("@")[0]?.trim();
+  return emailPrefix || email;
+}
+
 const prismaWithJudging = prisma as typeof prisma & {
   teamJudgingScore: {
     upsert: (args: unknown) => Promise<TeamJudgingScoreUpsertResult>;
@@ -142,10 +151,13 @@ export async function PATCH(request: NextRequest) {
       judging.presentationScore +
       judging.ruleAdherenceScore;
 
+    const updatedByName = displayUserName(user.name, user.email);
+
     return NextResponse.json({
       message: "Judging marks saved.",
       judging: {
         ...judging,
+        updatedByName,
         totalScore,
       },
     });

@@ -41,7 +41,7 @@ type JudgingSnapshot = {
   presentationScore: number;
   ruleAdherenceScore: number;
   comments: string | null;
-  updatedByEmail: string | null;
+  updatedByName: string | null;
   updatedAt: string;
 };
 
@@ -73,7 +73,7 @@ type JudgingApiResponse = {
     presentationScore: number;
     ruleAdherenceScore: number;
     comments: string | null;
-    updatedByEmail: string | null;
+    updatedByName: string | null;
     updatedAt: string;
     totalScore: number;
   };
@@ -383,7 +383,7 @@ export function JudgingBoard({ initialTeams }: JudgingBoardProps) {
               presentationScore: savedJudging.presentationScore,
               ruleAdherenceScore: savedJudging.ruleAdherenceScore,
               comments: savedJudging.comments,
-              updatedByEmail: savedJudging.updatedByEmail,
+              updatedByName: savedJudging.updatedByName,
               updatedAt: savedJudging.updatedAt,
             },
           };
@@ -517,8 +517,8 @@ export function JudgingBoard({ initialTeams }: JudgingBoardProps) {
                       <p className="mt-2 text-sm text-neutral-400">Repository link not submitted yet.</p>
                     )}
                     <p className="mt-3 text-xs text-neutral-500">Last updated: {lastUpdated}</p>
-                    {judging?.updatedByEmail ? (
-                      <p className="mt-1 text-xs text-neutral-500">Updated by: {judging.updatedByEmail}</p>
+                    {judging?.updatedByName ? (
+                      <p className="mt-1 text-xs text-neutral-500">Updated by: {judging.updatedByName}</p>
                     ) : null}
                   </div>
                 </div>
