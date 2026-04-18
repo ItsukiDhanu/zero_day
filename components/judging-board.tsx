@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, KeyboardEvent, useEffect, useMemo, useState } from "react";
 
 const MAX_CRITERION_SCORE = 20;
 
@@ -83,6 +83,13 @@ type JudgingBoardProps = {
   initialTeams: JudgingTeamState[];
 };
 
+type SearchSuggestion = {
+  id: string;
+  value: string;
+  label: string;
+  kind: "Team" | "Member";
+};
+
 const EMPTY_DRAFT: JudgingDraft = {
   innovationScore: 0,
   impactScore: 0,
@@ -154,6 +161,7 @@ export function JudgingBoard({ initialTeams }: JudgingBoardProps) {
   const [savingTeamId, setSavingTeamId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Record<string, string>>({});
   const [query, setQuery] = useState("");
+  const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(-1);
   const hasSearchQuery = query.trim().length > 0;
 
   const filteredTeams = useMemo(() => {
@@ -172,11 +180,100 @@ export function JudgingBoard({ initialTeams }: JudgingBoardProps) {
     });
   }, [query, teams]);
 
+  const searchSuggestions = useMemo(() => {
+    const normalizedQuery = query.trim().toLowerCase();
+
+    if (!normalizedQuery) {
+      return [];
+    }
+
+    const suggestions: SearchSuggestion[] = [];
+
+    for (const team of teams) {
+      if (team.name.toLowerCase().includes(normalizedQuery)) {
+        suggestions.push({
+          id: `team-${team.id}`,
+          value: team.name,
+          label: team.name,
+          kind: "Team",
+        });
+      }
+
+      for (const member of team.members) {
+        if (member.toLowerCase().includes(normalizedQuery)) {
+          suggestions.push({
+            id: `member-${team.id}-${member.toLowerCase().replace(/\s+/g, "-")}`,
+            value: member,
+            label: `${member} (${team.name})`,
+            kind: "Member",
+          });
+        }
+      }
+    }
+
+    const deduped = new Map<string, SearchSuggestion>();
+
+    for (const suggestion of suggestions) {
+      const dedupeKey = `${suggestion.kind}:${suggestion.value.toLowerCase()}`;
+      if (!deduped.has(dedupeKey)) {
+        deduped.set(dedupeKey, suggestion);
+      }
+    }
+
+    return Array.from(deduped.values()).slice(0, 8);
+  }, [query, teams]);
+
+  useEffect(() => {
+    setSelectedSuggestionIndex(-1);
+  }, [query]);
+
   const setTeamMessage = (teamId: string, message: string) => {
     setMessages((current) => ({
       ...current,
       [teamId]: message,
     }));
+  };
+
+  const applySuggestion = (value: string) => {
+    setQuery(value);
+    setSelectedSuggestionIndex(-1);
+  };
+
+  const handleSearchKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+    if (!hasSearchQuery || searchSuggestions.length === 0) {
+      return;
+    }
+
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      setSelectedSuggestionIndex((current) => {
+        const next = current + 1;
+        return next >= searchSuggestions.length ? 0 : next;
+      });
+      return;
+    }
+
+    if (event.key === "ArrowUp") {
+      event.preventDefault();
+      setSelectedSuggestionIndex((current) => {
+        if (current <= 0) {
+          return searchSuggestions.length - 1;
+        }
+
+        return current - 1;
+      });
+      return;
+    }
+
+    if (event.key === "Enter" && selectedSuggestionIndex >= 0) {
+      event.preventDefault();
+      applySuggestion(searchSuggestions[selectedSuggestionIndex].value);
+      return;
+    }
+
+    if (event.key === "Escape") {
+      setSelectedSuggestionIndex(-1);
+    }
   };
 
   const handleScoreChange = (teamId: string, field: ScoreField, value: string) => {
@@ -315,9 +412,36 @@ export function JudgingBoard({ initialTeams }: JudgingBoardProps) {
           type="text"
           value={query}
           onChange={(event) => setQuery(event.target.value)}
+          onKeyDown={handleSearchKeyDown}
           placeholder="Search by team name or member name"
           className="mt-2 w-full rounded-md border border-white/15 bg-black/50 px-3 py-2 text-sm text-neutral-100 outline-none transition placeholder:text-neutral-500 focus:border-phosphor/50"
         />
+
+        {hasSearchQuery && searchSuggestions.length > 0 ? (
+          <div className="mt-3 rounded-md border border-white/10 bg-black/70 p-2">
+            <p className="px-2 pb-2 text-[11px] uppercase tracking-[0.16em] text-neutral-500">Suggestions</p>
+            <ul className="grid gap-1">
+              {searchSuggestions.map((suggestion, index) => (
+                <li key={suggestion.id}>
+                  <button
+                    type="button"
+                    onClick={() => applySuggestion(suggestion.value)}
+                    className={`flex w-full items-center justify-between rounded-md px-2 py-2 text-left text-sm transition ${
+                      index === selectedSuggestionIndex
+                        ? "bg-phosphor/15 text-phosphor"
+                        : "bg-black/50 text-neutral-200 hover:bg-white/10"
+                    }`}
+                  >
+                    <span className="truncate">{suggestion.label}</span>
+                    <span className="ml-3 shrink-0 rounded border border-white/15 px-1.5 py-0.5 text-[10px] uppercase tracking-[0.12em] text-neutral-400">
+                      {suggestion.kind}
+                    </span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
       </div>
 
       <div className="mt-4 grid gap-4">
