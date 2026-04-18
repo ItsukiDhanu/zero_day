@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { ApiError, isApiError } from "@/lib/api-error";
 import { getSessionUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { getOrCreateSiteSettings } from "@/lib/site-settings";
 
 type TeamRepositoryPayload = {
   repositoryUrl?: unknown;
@@ -69,6 +70,11 @@ export async function POST(request: NextRequest) {
 
     if (!user.teamId) {
       throw new ApiError(409, "Join or create a team before submitting a repository link.");
+    }
+
+    const settings = await getOrCreateSiteSettings();
+    if (!settings.repositorySubmissionOpen) {
+      throw new ApiError(403, "Repository submission is currently closed by organizers.");
     }
 
     const payload = parsePayload((await request.json()) as TeamRepositoryPayload);

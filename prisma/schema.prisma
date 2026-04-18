@@ -68,6 +68,7 @@ model SiteSettings {
   id               String   @id @default(uuid()) @db.Uuid
   singletonKey     String   @unique @default("global")
   registrationOpen Boolean  @default(true)
+  repositorySubmissionOpen Boolean @default(false) @map("repository_submission_open")
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 }

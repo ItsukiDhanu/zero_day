@@ -6,6 +6,7 @@ const SETTINGS_CACHE_TTL_MS = 60_000;
 
 type SiteSettingsSnapshot = {
   registrationOpen: boolean;
+  repositorySubmissionOpen: boolean;
 };
 
 let settingsCache: {
@@ -13,9 +14,13 @@ let settingsCache: {
   data: SiteSettingsSnapshot;
 } | null = null;
 
-function toSnapshot(settings: { registrationOpen: boolean }): SiteSettingsSnapshot {
+function toSnapshot(settings: {
+  registrationOpen: boolean;
+  repositorySubmissionOpen: boolean;
+}): SiteSettingsSnapshot {
   return {
     registrationOpen: settings.registrationOpen,
+    repositorySubmissionOpen: settings.repositorySubmissionOpen,
   };
 }
 
@@ -33,6 +38,7 @@ export async function getOrCreateSiteSettings() {
     where: { singletonKey: GLOBAL_SETTINGS_KEY },
     select: {
       registrationOpen: true,
+      repositorySubmissionOpen: true,
     },
   });
 
@@ -42,6 +48,7 @@ export async function getOrCreateSiteSettings() {
       data: { singletonKey: GLOBAL_SETTINGS_KEY },
       select: {
         registrationOpen: true,
+        repositorySubmissionOpen: true,
       },
     }));
 
@@ -64,6 +71,30 @@ export async function updateSiteSettingsRegistrationOpen(registrationOpen: boole
     },
     select: {
       registrationOpen: true,
+      repositorySubmissionOpen: true,
+    },
+  });
+
+  const snapshot = toSnapshot(updatedSettings);
+  settingsCache = {
+    data: snapshot,
+    expiresAt: Date.now() + SETTINGS_CACHE_TTL_MS,
+  };
+
+  return snapshot;
+}
+
+export async function updateSiteSettingsRepositorySubmissionOpen(repositorySubmissionOpen: boolean) {
+  const updatedSettings = await prisma.siteSettings.upsert({
+    where: { singletonKey: GLOBAL_SETTINGS_KEY },
+    update: { repositorySubmissionOpen },
+    create: {
+      singletonKey: GLOBAL_SETTINGS_KEY,
+      repositorySubmissionOpen,
+    },
+    select: {
+      registrationOpen: true,
+      repositorySubmissionOpen: true,
     },
   });
 

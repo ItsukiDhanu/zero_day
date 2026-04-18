@@ -5,6 +5,7 @@ import { CommandPalette } from "@/components/command-palette";
 import { TeamRepositorySubmitForm } from "@/components/team-repository-submit-form";
 import { prisma } from "@/lib/prisma";
 import { decodeSessionToken } from "@/lib/session";
+import { getOrCreateSiteSettings } from "@/lib/site-settings";
 
 export const dynamic = "force-dynamic";
 
@@ -28,7 +29,7 @@ export default async function ConfirmedTeamsPage() {
 
   const isAuthenticated = true;
 
-  const [currentUser, teams] = await Promise.all([
+  const [currentUser, teams, settings] = await Promise.all([
     prisma.user.findUnique({
       where: { id: userId },
       select: {
@@ -75,6 +76,7 @@ export default async function ConfirmedTeamsPage() {
         },
       },
     }),
+    getOrCreateSiteSettings(),
   ]);
 
   if (!currentUser) {
@@ -166,6 +168,10 @@ export default async function ConfirmedTeamsPage() {
               ) : !currentTeamIsConfirmed ? (
                 <p className="mt-3 text-sm text-neutral-300">
                   Your team needs 2 to 4 members before the repository link can be submitted.
+                </p>
+              ) : !settings.repositorySubmissionOpen ? (
+                <p className="mt-3 text-sm text-neutral-300">
+                  Repository submission is currently closed by admin.
                 </p>
               ) : currentUserIsCaptain ? (
                 <TeamRepositorySubmitForm

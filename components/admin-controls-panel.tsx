@@ -37,6 +37,7 @@ type AdminManagedUser = {
 
 type SettingsResponse = {
   registrationOpen?: boolean;
+  repositorySubmissionOpen?: boolean;
   error?: string;
 };
 
@@ -97,6 +98,7 @@ export function AdminControlsPanel({ mode = "admin" }: { mode?: ControlPanelMode
   const isOrganizerView = mode === "organizer";
 
   const [registrationOpen, setRegistrationOpen] = useState(true);
+  const [repositorySubmissionOpen, setRepositorySubmissionOpen] = useState(false);
   const [settingsBusy, setSettingsBusy] = useState(false);
   const [settingsMessage, setSettingsMessage] = useState("");
 
@@ -134,11 +136,16 @@ export function AdminControlsPanel({ mode = "admin" }: { mode?: ControlPanelMode
     const response = await fetch("/api/settings", { cache: "no-store" });
     const payload = (await response.json().catch(() => ({}))) as SettingsResponse;
 
-    if (!response.ok || typeof payload.registrationOpen !== "boolean") {
-      throw new Error(payload.error ?? "Unable to load registration settings.");
+    if (
+      !response.ok ||
+      typeof payload.registrationOpen !== "boolean" ||
+      typeof payload.repositorySubmissionOpen !== "boolean"
+    ) {
+      throw new Error(payload.error ?? "Unable to load global settings.");
     }
 
     setRegistrationOpen(payload.registrationOpen);
+    setRepositorySubmissionOpen(payload.repositorySubmissionOpen);
   }, []);
 
   const loadUsers = useCallback(async (rawQuery: string) => {
@@ -229,15 +236,57 @@ export function AdminControlsPanel({ mode = "admin" }: { mode?: ControlPanelMode
 
       const payload = (await response.json().catch(() => ({}))) as SettingsResponse;
 
-      if (!response.ok || typeof payload.registrationOpen !== "boolean") {
+      if (
+        !response.ok ||
+        typeof payload.registrationOpen !== "boolean" ||
+        typeof payload.repositorySubmissionOpen !== "boolean"
+      ) {
         throw new Error(payload.error ?? "Settings update failed.");
       }
 
       setRegistrationOpen(payload.registrationOpen);
+      setRepositorySubmissionOpen(payload.repositorySubmissionOpen);
       setSettingsMessage(
         payload.registrationOpen
           ? "Registration toggled to OPEN. New users can register and form teams."
           : "Registration toggled to CLOSED. New user/team actions are paused.",
+      );
+    } catch (error) {
+      setSettingsMessage(error instanceof Error ? error.message : "Settings update failed.");
+    } finally {
+      setSettingsBusy(false);
+    }
+  };
+
+  const handleToggleRepositorySubmission = async () => {
+    setSettingsBusy(true);
+    setSettingsMessage("");
+
+    try {
+      const response = await fetch("/api/settings", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ repositorySubmissionOpen: !repositorySubmissionOpen }),
+      });
+
+      const payload = (await response.json().catch(() => ({}))) as SettingsResponse;
+
+      if (
+        !response.ok ||
+        typeof payload.registrationOpen !== "boolean" ||
+        typeof payload.repositorySubmissionOpen !== "boolean"
+      ) {
+        throw new Error(payload.error ?? "Settings update failed.");
+      }
+
+      setRegistrationOpen(payload.registrationOpen);
+      setRepositorySubmissionOpen(payload.repositorySubmissionOpen);
+      setSettingsMessage(
+        payload.repositorySubmissionOpen
+          ? "Repository submission toggled to OPEN. Team leaders can submit GitHub links."
+          : "Repository submission toggled to CLOSED. Team leaders cannot submit links right now.",
       );
     } catch (error) {
       setSettingsMessage(error instanceof Error ? error.message : "Settings update failed.");
@@ -533,6 +582,16 @@ export function AdminControlsPanel({ mode = "admin" }: { mode?: ControlPanelMode
           Registration Status: {registrationOpen ? "OPEN" : "CLOSED"}
         </div>
 
+        <div
+          className={`mt-3 rounded-lg border px-3 py-2 text-sm ${
+            repositorySubmissionOpen
+              ? "border-phosphor/40 bg-phosphor/10 text-phosphor"
+              : "border-terminal-amber/50 bg-terminal-amber/10 text-terminal-amber"
+          }`}
+        >
+          Repository Submission: {repositorySubmissionOpen ? "OPEN" : "CLOSED"}
+        </div>
+
         <div className="mt-4 rounded-xl border border-white/10 bg-black/40 p-4 backdrop-blur-md">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
@@ -550,6 +609,29 @@ export function AdminControlsPanel({ mode = "admin" }: { mode?: ControlPanelMode
           </div>
 
           {settingsMessage ? <p className="mt-3 text-sm text-neutral-300">{settingsMessage}</p> : null}
+        </div>
+
+        <div className="mt-4 rounded-xl border border-white/10 bg-black/40 p-4 backdrop-blur-md">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="text-xs uppercase tracking-[0.2em] text-neutral-400">Repository Submission</p>
+              <p className="mt-1 text-sm text-neutral-200">
+                Allow team leaders to submit or update GitHub repository links on Confirmed Teams.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={handleToggleRepositorySubmission}
+              disabled={settingsBusy}
+              className="rounded-lg border border-phosphor bg-phosphor px-3 py-2 text-xs font-semibold text-black transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-phosphor"
+            >
+              {settingsBusy
+                ? "Applying..."
+                : repositorySubmissionOpen
+                  ? "Close Repo Submission"
+                  : "Open Repo Submission"}
+            </button>
+          </div>
         </div>
 
         <div className="mt-4 rounded-xl border border-white/10 bg-black/40 p-4 backdrop-blur-md">

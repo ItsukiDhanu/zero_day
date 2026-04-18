@@ -4,10 +4,12 @@ import { canManageSiteSettings, getSessionIdentity } from "@/lib/auth";
 import {
   getOrCreateSiteSettings,
   updateSiteSettingsRegistrationOpen,
+  updateSiteSettingsRepositorySubmissionOpen,
 } from "@/lib/site-settings";
 
 type SettingsPatchPayload = {
   registrationOpen?: unknown;
+  repositorySubmissionOpen?: unknown;
 };
 
 export async function GET() {
@@ -16,6 +18,7 @@ export async function GET() {
   return NextResponse.json(
     {
       registrationOpen: settings.registrationOpen,
+      repositorySubmissionOpen: settings.repositorySubmissionOpen,
     },
     {
       headers: {
@@ -38,14 +41,31 @@ export async function PATCH(request: NextRequest) {
 
     const payload = (await request.json()) as SettingsPatchPayload;
 
-    if (typeof payload.registrationOpen !== "boolean") {
-      throw new ApiError(400, "registrationOpen must be a boolean.");
+    const hasRegistrationOpen = typeof payload.registrationOpen === "boolean";
+    const hasRepositorySubmissionOpen = typeof payload.repositorySubmissionOpen === "boolean";
+
+    if (!hasRegistrationOpen && !hasRepositorySubmissionOpen) {
+      throw new ApiError(
+        400,
+        "Provide at least one boolean field: registrationOpen or repositorySubmissionOpen.",
+      );
     }
 
-    const updatedSettings = await updateSiteSettingsRegistrationOpen(payload.registrationOpen);
+    let updatedSettings = await getOrCreateSiteSettings();
+
+    if (hasRegistrationOpen) {
+      updatedSettings = await updateSiteSettingsRegistrationOpen(payload.registrationOpen as boolean);
+    }
+
+    if (hasRepositorySubmissionOpen) {
+      updatedSettings = await updateSiteSettingsRepositorySubmissionOpen(
+        payload.repositorySubmissionOpen as boolean,
+      );
+    }
 
     return NextResponse.json({
       registrationOpen: updatedSettings.registrationOpen,
+      repositorySubmissionOpen: updatedSettings.repositorySubmissionOpen,
     });
   } catch (error) {
     if (isApiError(error)) {
