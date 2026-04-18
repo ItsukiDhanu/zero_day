@@ -533,16 +533,23 @@ export function JudgingBoard({ initialTeams }: JudgingBoardProps) {
                       >
                         <span className="text-xs uppercase tracking-[0.16em] text-neutral-400">{criterion.label}</span>
                         <span className="mt-2 block text-sm text-neutral-300">{criterion.description}</span>
-                        <span className="mt-2 block text-xs text-neutral-500">0 to 20 points</span>
+                        <div className="mt-3 flex items-center justify-between text-xs text-neutral-500">
+                          <span>0</span>
+                          <span className="rounded border border-phosphor/30 bg-phosphor/10 px-2 py-0.5 font-semibold text-phosphor">
+                            {draft[criterion.key]}/20
+                          </span>
+                          <span>20</span>
+                        </div>
                         <input
                           id={`${team.id}-${criterion.key}`}
-                          type="number"
+                          type="range"
                           min={0}
                           max={MAX_CRITERION_SCORE}
+                          step={1}
                           value={draft[criterion.key]}
                           onChange={(event) => handleScoreChange(team.id, criterion.key, event.target.value)}
-                          className="mt-2 w-full rounded-md border border-white/15 bg-black/50 px-3 py-2 text-sm text-neutral-100 outline-none transition focus:border-phosphor/50"
-                          required
+                          className="mt-2 h-2 w-full cursor-ew-resize appearance-none rounded-lg bg-neutral-700 accent-phosphor outline-none"
+                          aria-label={`${criterion.label} score`}
                         />
                       </label>
                     ))}
