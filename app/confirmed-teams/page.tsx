@@ -34,6 +34,7 @@ export default async function ConfirmedTeamsPage() {
       where: { id: userId },
       select: {
         id: true,
+        role: true,
         team: {
           select: {
             id: true,
@@ -99,6 +100,7 @@ export default async function ConfirmedTeamsPage() {
     ? currentTeam.captainId ?? currentTeam.members[0]?.id ?? null
     : null;
   const currentUserIsCaptain = currentTeamCaptainId === currentUser.id;
+  const canViewRepositoryLinks = currentUser.role === "ADMIN" || currentUser.role === "ORGANIZER";
 
   return (
     <main className="relative min-h-screen overflow-hidden bg-neutral-950 pb-12 text-neutral-100">
@@ -214,17 +216,21 @@ export default async function ConfirmedTeamsPage() {
 
                     <div className="mt-3 rounded-lg border border-white/10 bg-black/70 p-3">
                       <p className="text-xs uppercase tracking-[0.18em] text-neutral-400">GitHub Repository</p>
-                      {team.repositoryUrl ? (
-                        <a
-                          href={team.repositoryUrl}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="mt-2 inline-flex break-all text-sm font-medium text-phosphor transition hover:text-phosphor/80"
-                        >
-                          {team.repositoryUrl}
-                        </a>
+                      {canViewRepositoryLinks ? (
+                        team.repositoryUrl ? (
+                          <a
+                            href={team.repositoryUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="mt-2 inline-flex break-all text-sm font-medium text-phosphor transition hover:text-phosphor/80"
+                          >
+                            {team.repositoryUrl}
+                          </a>
+                        ) : (
+                          <p className="mt-2 text-sm text-neutral-400">Repository link not submitted yet.</p>
+                        )
                       ) : (
-                        <p className="mt-2 text-sm text-neutral-400">Repository link not submitted yet.</p>
+                        <p className="mt-2 text-sm text-neutral-400">Visible only to organizers and admins.</p>
                       )}
                     </div>
                   </article>
