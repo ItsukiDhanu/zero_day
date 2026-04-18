@@ -25,8 +25,13 @@ type TeamResponse = {
   members: TeamMemberResponse[];
 };
 
+function normalizeTeamName(value: string) {
+  return value.trim().replace(/\s+/g, " ");
+}
+
 function parsePayload(payload: CreateTeamPayload) {
-  const name = typeof payload.name === "string" ? payload.name.trim() : "";
+  const rawName = typeof payload.name === "string" ? payload.name : "";
+  const name = normalizeTeamName(rawName);
 
   if (!name || name.length < 2 || name.length > 60) {
     throw new ApiError(400, "Team name must be between 2 and 60 characters.");
@@ -71,6 +76,22 @@ export async function POST(request: NextRequest) {
 
           if (freshUser.teamId) {
             throw new ApiError(409, "You are already assigned to a team.");
+          }
+
+          const existingTeam = await tx.team.findFirst({
+            where: {
+              name: {
+                equals: payload.name,
+                mode: "insensitive",
+              },
+            },
+            select: {
+              id: true,
+            },
+          });
+
+          if (existingTeam) {
+            throw new ApiError(409, "Team name already exists. Choose a different name.");
           }
 
           const createdTeam = await tx.team.create({
@@ -123,8 +144,18 @@ export async function POST(request: NextRequest) {
           Array.isArray(error.meta?.target) &&
           error.meta.target.includes("join_code");
 
+        const duplicateTeamName =
+          error instanceof Prisma.PrismaClientKnownRequestError &&
+          error.code === "P2002" &&
+          Array.isArray(error.meta?.target) &&
+          error.meta.target.includes("name");
+
         if (duplicateJoinCode) {
           continue;
+        }
+
+        if (duplicateTeamName) {
+          throw new ApiError(409, "Team name already exists. Choose a different name.");
         }
 
         throw error;
