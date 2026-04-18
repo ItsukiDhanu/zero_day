@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, KeyboardEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, KeyboardEvent, useDeferredValue, useEffect, useMemo, useState } from "react";
 
 const MAX_CRITERION_SCORE = 20;
 
@@ -90,6 +90,12 @@ type SearchSuggestion = {
   kind: "Team" | "Member";
 };
 
+type SearchableTeam = {
+  team: JudgingTeamState;
+  teamNameLower: string;
+  memberNamesLower: string[];
+};
+
 const EMPTY_DRAFT: JudgingDraft = {
   innovationScore: 0,
   impactScore: 0,
@@ -161,36 +167,46 @@ export function JudgingBoard({ initialTeams }: JudgingBoardProps) {
   const [savingTeamId, setSavingTeamId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Record<string, string>>({});
   const [query, setQuery] = useState("");
+  const deferredQuery = useDeferredValue(query);
   const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(-1);
   const hasSearchQuery = query.trim().length > 0;
+  const normalizedQuery = deferredQuery.trim().toLowerCase();
+
+  const searchableTeams = useMemo<SearchableTeam[]>(
+    () =>
+      teams.map((team) => ({
+        team,
+        teamNameLower: team.name.toLowerCase(),
+        memberNamesLower: team.members.map((member) => member.toLowerCase()),
+      })),
+    [teams],
+  );
 
   const filteredTeams = useMemo(() => {
-    const normalizedQuery = query.trim().toLowerCase();
-
     if (!normalizedQuery) {
       return [];
     }
 
-    return teams.filter((team) => {
-      if (team.name.toLowerCase().includes(normalizedQuery)) {
-        return true;
-      }
+    return searchableTeams
+      .filter(({ teamNameLower, memberNamesLower }) => {
+        if (teamNameLower.includes(normalizedQuery)) {
+          return true;
+        }
 
-      return team.members.some((member) => member.toLowerCase().includes(normalizedQuery));
-    });
-  }, [query, teams]);
+        return memberNamesLower.some((memberNameLower) => memberNameLower.includes(normalizedQuery));
+      })
+      .map(({ team }) => team);
+  }, [normalizedQuery, searchableTeams]);
 
   const searchSuggestions = useMemo(() => {
-    const normalizedQuery = query.trim().toLowerCase();
-
     if (!normalizedQuery) {
       return [];
     }
 
     const suggestions: SearchSuggestion[] = [];
 
-    for (const team of teams) {
-      if (team.name.toLowerCase().includes(normalizedQuery)) {
+    for (const { team, teamNameLower, memberNamesLower } of searchableTeams) {
+      if (teamNameLower.includes(normalizedQuery)) {
         suggestions.push({
           id: `team-${team.id}`,
           value: team.name,
@@ -199,15 +215,19 @@ export function JudgingBoard({ initialTeams }: JudgingBoardProps) {
         });
       }
 
-      for (const member of team.members) {
-        if (member.toLowerCase().includes(normalizedQuery)) {
-          suggestions.push({
-            id: `member-${team.id}-${member.toLowerCase().replace(/\s+/g, "-")}`,
-            value: member,
-            label: `${member} (${team.name})`,
-            kind: "Member",
-          });
+      for (let index = 0; index < memberNamesLower.length; index += 1) {
+        if (!memberNamesLower[index].includes(normalizedQuery)) {
+          continue;
         }
+
+        const member = team.members[index];
+
+        suggestions.push({
+          id: `member-${team.id}-${index}`,
+          value: member,
+          label: `${member} (${team.name})`,
+          kind: "Member",
+        });
       }
     }
 
@@ -221,7 +241,7 @@ export function JudgingBoard({ initialTeams }: JudgingBoardProps) {
     }
 
     return Array.from(deduped.values()).slice(0, 8);
-  }, [query, teams]);
+  }, [normalizedQuery, searchableTeams]);
 
   useEffect(() => {
     setSelectedSuggestionIndex(-1);

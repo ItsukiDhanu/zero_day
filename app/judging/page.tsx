@@ -45,7 +45,7 @@ export default async function JudgingPage() {
     redirect("/login?next=/judging");
   }
 
-  const [currentUser, teams, judgingScores] = await Promise.all([
+  const [currentUser, teams] = await Promise.all([
     prisma.user.findUnique({
       where: { id: userId },
       select: {
@@ -74,19 +74,6 @@ export default async function JudgingPage() {
         },
       },
     }),
-    prismaWithJudging.teamJudgingScore.findMany({
-      select: {
-        teamId: true,
-        innovationScore: true,
-        impactScore: true,
-        implementationScore: true,
-        presentationScore: true,
-        ruleAdherenceScore: true,
-        comments: true,
-        updatedByEmail: true,
-        updatedAt: true,
-      },
-    }),
   ]);
 
   if (!currentUser || !canManageSiteSettings(currentUser.role)) {
@@ -96,6 +83,29 @@ export default async function JudgingPage() {
   const confirmedTeams = teams.filter(
     (team) => team._count.members >= 2 && team._count.members <= 4,
   );
+
+  const confirmedTeamIds = confirmedTeams.map((team) => team.id);
+
+  const judgingScores = confirmedTeamIds.length
+    ? await prismaWithJudging.teamJudgingScore.findMany({
+        where: {
+          teamId: {
+            in: confirmedTeamIds,
+          },
+        },
+        select: {
+          teamId: true,
+          innovationScore: true,
+          impactScore: true,
+          implementationScore: true,
+          presentationScore: true,
+          ruleAdherenceScore: true,
+          comments: true,
+          updatedByEmail: true,
+          updatedAt: true,
+        },
+      })
+    : [];
 
   const judgingByTeamId = new Map(judgingScores.map((judgingScore) => [judgingScore.teamId, judgingScore]));
 

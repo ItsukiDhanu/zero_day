@@ -1,6 +1,6 @@
 "use client";
 
-import { KeyboardEvent, useCallback, useEffect, useMemo, useState } from "react";
+import { KeyboardEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 type TeamMemberSnapshot = {
   id: string;
@@ -47,6 +47,16 @@ type AdminUsersResponse = {
   error?: string;
 };
 
+type AdminUserSuggestionsResponse = {
+  suggestions?: Array<{
+    id: string;
+    name: string | null;
+    email: string;
+    phoneNumber: string | null;
+  }>;
+  error?: string;
+};
+
 type AdminTeamsResponse = {
   teams?: AdminManagedTeam[];
   error?: string;
@@ -78,6 +88,11 @@ type UserSearchSuggestion = {
   kind: "Name" | "Email" | "Phone";
 };
 
+type UserSearchCacheEntry = {
+  users: AdminManagedUser[];
+  teamsById: Record<string, TeamSnapshot>;
+};
+
 const ROLE_OPTIONS = ["PARTICIPANT", "ORGANIZER", "ADMIN"] as const;
 type ControlPanelMode = "admin" | "organizer";
 
@@ -101,8 +116,67 @@ function toCsvCell(value: string) {
   return value;
 }
 
+function buildUserSearchSuggestions(
+  users: Array<{ name: string | null; email: string; phoneNumber: string | null }>,
+  query: string,
+) {
+  const normalizedQuery = query.trim().toLowerCase();
+  const phoneQuery = query.replace(/[^0-9]/g, "");
+
+  if (!normalizedQuery) {
+    return [] as UserSearchSuggestion[];
+  }
+
+  const suggestions: UserSearchSuggestion[] = [];
+
+  for (const managedUser of users) {
+    const name = managedUser.name?.trim() ?? "";
+    const email = managedUser.email.trim();
+    const phone = managedUser.phoneNumber?.trim() ?? "";
+
+    if (name && name.toLowerCase().includes(normalizedQuery)) {
+      suggestions.push({
+        id: `name:${name.toLowerCase()}`,
+        value: name,
+        label: `${name} (${email})`,
+        kind: "Name",
+      });
+    }
+
+    if (email.toLowerCase().includes(normalizedQuery)) {
+      suggestions.push({
+        id: `email:${email.toLowerCase()}`,
+        value: email,
+        label: email,
+        kind: "Email",
+      });
+    }
+
+    if (phone && phoneQuery.length >= 3 && phone.includes(phoneQuery)) {
+      suggestions.push({
+        id: `phone:${phone}`,
+        value: phone,
+        label: `${phone} (${email})`,
+        kind: "Phone",
+      });
+    }
+  }
+
+  const deduped = new Map<string, UserSearchSuggestion>();
+
+  for (const suggestion of suggestions) {
+    if (!deduped.has(suggestion.id)) {
+      deduped.set(suggestion.id, suggestion);
+    }
+  }
+
+  return Array.from(deduped.values()).slice(0, 8);
+}
+
 export function AdminControlsPanel({ mode = "admin" }: { mode?: ControlPanelMode }) {
   const isOrganizerView = mode === "organizer";
+  const userSearchCacheRef = useRef<Map<string, UserSearchCacheEntry>>(new Map());
+  const userSuggestionCacheRef = useRef<Map<string, UserSearchSuggestion[]>>(new Map());
 
   const [registrationOpen, setRegistrationOpen] = useState(true);
   const [repositorySubmissionOpen, setRepositorySubmissionOpen] = useState(false);
@@ -160,12 +234,26 @@ export function AdminControlsPanel({ mode = "admin" }: { mode?: ControlPanelMode
 
   const loadUsers = useCallback(async (rawQuery: string) => {
     const query = rawQuery.trim();
+    const queryKey = query.toLowerCase();
 
     if (!query) {
       setUsers([]);
       setTeamsById({});
       setUsersSearched(false);
       setUsersMessage("");
+      return;
+    }
+
+    const cachedResult = userSearchCacheRef.current.get(queryKey);
+
+    if (cachedResult) {
+      setUsers(cachedResult.users);
+      setTeamsById(cachedResult.teamsById);
+      setUsersSearched(true);
+      setLastUserSearchQuery(query);
+      setUsersMessage(
+        `Loaded ${cachedResult.users.length} user${cachedResult.users.length === 1 ? "" : "s"} for "${query}".`,
+      );
       return;
     }
 
@@ -180,12 +268,23 @@ export function AdminControlsPanel({ mode = "admin" }: { mode?: ControlPanelMode
         throw new Error(payload.error ?? "Unable to load user directory.");
       }
 
-      setUsers(payload.users ?? []);
-      setTeamsById(payload.teamsById ?? {});
+      const nextUsers = payload.users ?? [];
+      const nextTeamsById = payload.teamsById ?? {};
+
+      userSearchCacheRef.current.set(queryKey, {
+        users: nextUsers,
+        teamsById: nextTeamsById,
+      });
+
+      const nextSuggestions = buildUserSearchSuggestions(nextUsers, query);
+      userSuggestionCacheRef.current.set(queryKey, nextSuggestions);
+
+      setUsers(nextUsers);
+      setTeamsById(nextTeamsById);
       setUsersSearched(true);
       setLastUserSearchQuery(query);
       setUsersMessage(
-        `Loaded ${(payload.users ?? []).length} user${(payload.users ?? []).length === 1 ? "" : "s"} for "${query}".`,
+        `Loaded ${nextUsers.length} user${nextUsers.length === 1 ? "" : "s"} for "${query}".`,
       );
     } catch (error) {
       setUsersSearched(false);
@@ -237,6 +336,7 @@ export function AdminControlsPanel({ mode = "admin" }: { mode?: ControlPanelMode
 
   useEffect(() => {
     const query = userSearchQuery.trim();
+    const queryKey = query.toLowerCase();
 
     if (query.length < 2) {
       setUserSearchSuggestions([]);
@@ -244,13 +344,25 @@ export function AdminControlsPanel({ mode = "admin" }: { mode?: ControlPanelMode
       return;
     }
 
+    const cachedSuggestions = userSuggestionCacheRef.current.get(queryKey);
+
+    if (cachedSuggestions) {
+      setUserSearchSuggestions(cachedSuggestions);
+      setUserSearchSuggestionsLoading(false);
+      return;
+    }
+
     let isCancelled = false;
+    const abortController = new AbortController();
     const timer = window.setTimeout(async () => {
       setUserSearchSuggestionsLoading(true);
 
       try {
-        const response = await fetch(`/api/admin/users?q=${encodeURIComponent(query)}`, { cache: "no-store" });
-        const payload = (await response.json().catch(() => ({}))) as AdminUsersResponse;
+        const response = await fetch(`/api/admin/users/suggestions?q=${encodeURIComponent(query)}`, {
+          cache: "no-store",
+          signal: abortController.signal,
+        });
+        const payload = (await response.json().catch(() => ({}))) as AdminUserSuggestionsResponse;
 
         if (!response.ok) {
           throw new Error(payload.error ?? "Unable to load user suggestions.");
@@ -260,53 +372,14 @@ export function AdminControlsPanel({ mode = "admin" }: { mode?: ControlPanelMode
           return;
         }
 
-        const normalizedQuery = query.toLowerCase();
-        const phoneQuery = query.replace(/[^0-9]/g, "");
-        const suggestions: UserSearchSuggestion[] = [];
-
-        for (const managedUser of payload.users ?? []) {
-          const name = managedUser.name?.trim() ?? "";
-          const email = managedUser.email.trim();
-          const phone = managedUser.phoneNumber?.trim() ?? "";
-
-          if (name && name.toLowerCase().includes(normalizedQuery)) {
-            suggestions.push({
-              id: `name:${name.toLowerCase()}`,
-              value: name,
-              label: `${name} (${email})`,
-              kind: "Name",
-            });
-          }
-
-          if (email.toLowerCase().includes(normalizedQuery)) {
-            suggestions.push({
-              id: `email:${email.toLowerCase()}`,
-              value: email,
-              label: email,
-              kind: "Email",
-            });
-          }
-
-          if (phone && phoneQuery.length >= 3 && phone.includes(phoneQuery)) {
-            suggestions.push({
-              id: `phone:${phone}`,
-              value: phone,
-              label: `${phone} (${email})`,
-              kind: "Phone",
-            });
-          }
+        const nextSuggestions = buildUserSearchSuggestions(payload.suggestions ?? [], query);
+        userSuggestionCacheRef.current.set(queryKey, nextSuggestions);
+        setUserSearchSuggestions(nextSuggestions);
+      } catch (error) {
+        if (error instanceof Error && error.name === "AbortError") {
+          return;
         }
 
-        const deduped = new Map<string, UserSearchSuggestion>();
-
-        for (const suggestion of suggestions) {
-          if (!deduped.has(suggestion.id)) {
-            deduped.set(suggestion.id, suggestion);
-          }
-        }
-
-        setUserSearchSuggestions(Array.from(deduped.values()).slice(0, 8));
-      } catch {
         if (!isCancelled) {
           setUserSearchSuggestions([]);
         }
@@ -319,6 +392,7 @@ export function AdminControlsPanel({ mode = "admin" }: { mode?: ControlPanelMode
 
     return () => {
       isCancelled = true;
+      abortController.abort();
       window.clearTimeout(timer);
     };
   }, [userSearchQuery]);
@@ -617,6 +691,7 @@ export function AdminControlsPanel({ mode = "admin" }: { mode?: ControlPanelMode
 
     if (event.key === "Escape") {
       setSelectedUserSuggestionIndex(-1);
+      setUserSearchSuggestions([]);
     }
   };
 
@@ -807,6 +882,9 @@ export function AdminControlsPanel({ mode = "admin" }: { mode?: ControlPanelMode
           <form
             onSubmit={(event) => {
               event.preventDefault();
+              setUserSearchSuggestions([]);
+              setUserSearchSuggestionsLoading(false);
+              setSelectedUserSuggestionIndex(-1);
               void loadUsers(userSearchQuery);
             }}
             className="mt-4 flex flex-wrap items-center gap-2"
