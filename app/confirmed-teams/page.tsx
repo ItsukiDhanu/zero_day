@@ -2,6 +2,7 @@ import Link from "next/link";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { CommandPalette } from "@/components/command-palette";
+import { TeamRepositorySubmitForm } from "@/components/team-repository-submit-form";
 import { prisma } from "@/lib/prisma";
 import { decodeSessionToken } from "@/lib/session";
 
@@ -27,27 +28,58 @@ export default async function ConfirmedTeamsPage() {
 
   const isAuthenticated = true;
 
-  const teams = await prisma.team.findMany({
-    orderBy: { createdAt: "asc" },
-    select: {
-      id: true,
-      name: true,
-      createdAt: true,
-      _count: {
-        select: {
-          members: true,
+  const [currentUser, teams] = await Promise.all([
+    prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        team: {
+          select: {
+            id: true,
+            name: true,
+            repositoryUrl: true,
+            captainId: true,
+            _count: {
+              select: {
+                members: true,
+              },
+            },
+            members: {
+              orderBy: { createdAt: "asc" },
+              select: {
+                id: true,
+              },
+            },
+          },
         },
       },
-      members: {
-        orderBy: { createdAt: "asc" },
-        select: {
-          id: true,
-          name: true,
-          email: true,
+    }),
+    prisma.team.findMany({
+      orderBy: { createdAt: "asc" },
+      select: {
+        id: true,
+        name: true,
+        repositoryUrl: true,
+        _count: {
+          select: {
+            members: true,
+          },
+        },
+        members: {
+          orderBy: { createdAt: "asc" },
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
         },
       },
-    },
-  });
+    }),
+  ]);
+
+  if (!currentUser) {
+    redirect("/login?next=/confirmed-teams");
+  }
 
   const confirmedTeams = teams.filter(
     (team) => team._count.members >= 2 && team._count.members <= 4,
@@ -57,6 +89,14 @@ export default async function ConfirmedTeamsPage() {
     (sum, team) => sum + team._count.members,
     0,
   );
+
+  const currentTeam = currentUser.team;
+  const currentTeamMemberCount = currentTeam?._count.members ?? 0;
+  const currentTeamIsConfirmed = currentTeamMemberCount >= 2 && currentTeamMemberCount <= 4;
+  const currentTeamCaptainId = currentTeam
+    ? currentTeam.captainId ?? currentTeam.members[0]?.id ?? null
+    : null;
+  const currentUserIsCaptain = currentTeamCaptainId === currentUser.id;
 
   return (
     <main className="relative min-h-screen overflow-hidden bg-neutral-950 pb-12 text-neutral-100">
@@ -117,6 +157,28 @@ export default async function ConfirmedTeamsPage() {
               </div>
             </div>
 
+            <div className="mt-6 rounded-xl border border-white/10 bg-black/60 p-4">
+              <p className="text-xs uppercase tracking-[0.18em] text-neutral-400">Repository Submission</p>
+              {!currentTeam ? (
+                <p className="mt-3 text-sm text-neutral-300">
+                  Join or create a team first. Only confirmed teams can submit a GitHub repository link.
+                </p>
+              ) : !currentTeamIsConfirmed ? (
+                <p className="mt-3 text-sm text-neutral-300">
+                  Your team needs 2 to 4 members before the repository link can be submitted.
+                </p>
+              ) : currentUserIsCaptain ? (
+                <TeamRepositorySubmitForm
+                  teamName={currentTeam.name}
+                  initialRepositoryUrl={currentTeam.repositoryUrl}
+                />
+              ) : (
+                <p className="mt-3 text-sm text-neutral-300">
+                  Only the team leader can submit or update your team&apos;s GitHub repository link.
+                </p>
+              )}
+            </div>
+
             <div className="mt-6 grid gap-4">
               {confirmedTeams.length === 0 ? (
                 <p className="rounded-lg border border-white/10 bg-black/60 px-3 py-3 text-sm text-neutral-400">
@@ -142,6 +204,22 @@ export default async function ConfirmedTeamsPage() {
                           <li key={member.id}>{displayMemberName(member)}</li>
                         ))}
                       </ul>
+                    </div>
+
+                    <div className="mt-3 rounded-lg border border-white/10 bg-black/70 p-3">
+                      <p className="text-xs uppercase tracking-[0.18em] text-neutral-400">GitHub Repository</p>
+                      {team.repositoryUrl ? (
+                        <a
+                          href={team.repositoryUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="mt-2 inline-flex break-all text-sm font-medium text-phosphor transition hover:text-phosphor/80"
+                        >
+                          {team.repositoryUrl}
+                        </a>
+                      ) : (
+                        <p className="mt-2 text-sm text-neutral-400">Repository link not submitted yet.</p>
+                      )}
                     </div>
                   </article>
                 ))

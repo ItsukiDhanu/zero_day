@@ -7,7 +7,7 @@ const rules = [
   {
     title: "Eligibility",
     points: [
-      "Each participant must register with a valid @acharya.ac.in email account.",
+      "Registration is open only to students of Acharya Institutes, and only for 1st year and 2nd year students using a valid @acharya.ac.in email address.",
       "One account represents one participant; shared accounts are not allowed.",
       "Participants must provide accurate profile information during registration.",
     ],
@@ -24,8 +24,10 @@ const rules = [
     title: "Build Guidelines",
     points: [
       "Your team must submit work produced during the official hackathon window.",
-      "Using open-source libraries is allowed, but plagiarism is strictly prohibited.",
+      "Using AI tools and open-source libraries is allowed, but plagiarism is strictly prohibited.",
       "Keep source code and documentation ready for mentor and jury review.",
+      "All teams must create a new GitHub repository for their project and submit the repository link on the Confirmed Teams page.",
+      "All teammates must collaborate and work together on that same repository.",
     ],
   },
   {

@@ -8,7 +8,7 @@ const faqs = [
   {
     question: "Who can register for Zero Day?",
     answer:
-      "Participants must register using a valid @acharya.ac.in email address and complete the registration form.",
+      "Registration is open only to students of Acharya Institutes, and only for 1st year and 2nd year students using a valid @acharya.ac.in email address.",
   },
   {
     question: "What is the allowed team size?",
@@ -16,9 +16,14 @@ const faqs = [
       "Each team must have a minimum of 2 members and a maximum of 4 members.",
   },
   {
-    question: "Can I participate without a team?",
+    question: "Is cross-department teaming allowed?",
     answer:
-      "Yes. You can register first and join or create a team later from the Team Console.",
+      "Yes. Students from different departments can form a team as long as all participants meet the eligibility rules.",
+  },
+  {
+    question: "What is the entry fee for a team?",
+    answer:
+      "The entry fee is Rs. 150 per team, and payment will be received during team creation.",
   },
   {
     question: "How do I join an existing team?",

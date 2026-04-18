@@ -49,6 +49,7 @@ model Team {
   id        String @id @default(uuid()) @db.Uuid
   name      String
   joinCode  String @unique @map("join_code") @db.Char(6)
+  repositoryUrl String? @map("repository_url")
   members   User[] @relation("TeamMembership")
 
   captainId String? @map("captain_id") @db.Uuid
