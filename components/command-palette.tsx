@@ -56,6 +56,20 @@ const commandActions: CommandAction[] = [
     path: "/confirmed-teams",
   },
   {
+    id: "rules",
+    label: "Hackathon Rules",
+    section: "Info",
+    hint: "Open rules and participation policy",
+    path: "/rules",
+  },
+  {
+    id: "faq",
+    label: "FAQ",
+    section: "Info",
+    hint: "Open frequently asked questions",
+    path: "/faq",
+  },
+  {
     id: "dashboard",
     label: "Participant Dashboard",
     section: "Workspace",

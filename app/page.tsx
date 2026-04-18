@@ -66,6 +66,18 @@ export default async function HomePage() {
               >
                 Confirmed Teams
               </Link>
+              <Link
+                href="/rules"
+                className="rounded-md border border-white/15 bg-black/40 px-2.5 py-1 text-neutral-300 transition hover:border-phosphor/40 hover:text-phosphor"
+              >
+                Rules
+              </Link>
+              <Link
+                href="/faq"
+                className="rounded-md border border-white/15 bg-black/40 px-2.5 py-1 text-neutral-300 transition hover:border-phosphor/40 hover:text-phosphor"
+              >
+                FAQ
+              </Link>
             </nav>
           </div>
         </header>
@@ -103,6 +115,28 @@ export default async function HomePage() {
             <h2 className="mt-3 text-xl font-semibold text-neutral-100">View Confirmed Teams</h2>
             <p className="mt-3 text-sm text-neutral-300">
               Public list of teams with 2 to 4 members, including participant names.
+            </p>
+          </Link>
+
+          <Link
+            href="/rules"
+            className="rounded-2xl border border-white/10 bg-black/40 p-6 backdrop-blur-md transition hover:border-phosphor/40"
+          >
+            <p className="text-xs uppercase tracking-[0.2em] text-phosphor/90">Playbook</p>
+            <h2 className="mt-3 text-xl font-semibold text-neutral-100">Read Hackathon Rules</h2>
+            <p className="mt-3 text-sm text-neutral-300">
+              Eligibility, team structure, judging expectations, and participation constraints.
+            </p>
+          </Link>
+
+          <Link
+            href="/faq"
+            className="rounded-2xl border border-white/10 bg-black/40 p-6 backdrop-blur-md transition hover:border-terminal-amber/60"
+          >
+            <p className="text-xs uppercase tracking-[0.2em] text-terminal-amber">Quick Answers</p>
+            <h2 className="mt-3 text-xl font-semibold text-neutral-100">Open FAQ</h2>
+            <p className="mt-3 text-sm text-neutral-300">
+              Common questions about registration, teams, access, and timeline.
             </p>
           </Link>
         </section>
