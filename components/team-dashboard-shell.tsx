@@ -1,8 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
-
-const SESSION_UPDATED_EVENT = "session-updated";
+import { FormEvent, useState } from "react";
 
 type SessionUser = {
   id: string;
@@ -28,11 +26,6 @@ type TeamState = {
   }>;
 };
 
-type SessionResponse = {
-  user: SessionUser | null;
-  team: TeamState | null;
-};
-
 type TeamActionResponse = {
   message?: string;
   error?: string;
@@ -56,54 +49,10 @@ export function TeamDashboardShell({
   const [user, setUser] = useState<SessionUser | null>(initialUser);
   const [team, setTeam] = useState<TeamState | null>(initialTeam);
   const [registrationOpen] = useState(initialRegistrationOpen);
-  const [hydrating, setHydrating] = useState(false);
   const [createStatus, setCreateStatus] = useState<"idle" | "submitting">("idle");
   const [joinStatus, setJoinStatus] = useState<"idle" | "submitting">("idle");
   const [createMessage, setCreateMessage] = useState("");
   const [joinMessage, setJoinMessage] = useState("");
-
-  useEffect(() => {
-    let cancelled = false;
-
-    const loadShellState = async () => {
-      setHydrating(true);
-
-      try {
-        const sessionResponse = await fetch("/api/auth/session", { cache: "no-store" });
-
-        const sessionPayload = (await sessionResponse
-          .json()
-          .catch(() => ({ user: null, team: null }))) as SessionResponse;
-
-        if (cancelled) {
-          return;
-        }
-
-        if (sessionResponse.ok) {
-          setUser(sessionPayload.user ?? null);
-          setTeam(sessionPayload.team ?? null);
-        } else {
-          setUser(null);
-          setTeam(null);
-        }
-      } finally {
-        if (!cancelled) {
-          setHydrating(false);
-        }
-      }
-    };
-
-    const handleSessionUpdated = () => {
-      void loadShellState();
-    };
-
-    window.addEventListener(SESSION_UPDATED_EVENT, handleSessionUpdated);
-
-    return () => {
-      cancelled = true;
-      window.removeEventListener(SESSION_UPDATED_EVENT, handleSessionUpdated);
-    };
-  }, []);
 
   const handleCreate = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -217,14 +166,6 @@ export function TeamDashboardShell({
     }
   };
 
-  const handleSignOut = async () => {
-    await fetch("/api/auth/logout", { method: "POST" });
-    setUser(null);
-    setTeam(null);
-    setCreateMessage("Session terminated. Register to continue.");
-    setJoinMessage("");
-  };
-
   const hasTeam = Boolean(team);
   const slotCount = team ? 4 - team.memberCount : 4;
 
@@ -234,32 +175,8 @@ export function TeamDashboardShell({
         <p className="text-xs uppercase tracking-[0.2em] text-phosphor/90">Team Dashboard Shell</p>
         <h2 className="mt-2 text-2xl font-semibold text-neutral-100 sm:text-3xl">Create + Join Team Console</h2>
 
-        <div className="mt-5 rounded-xl border border-white/10 bg-black/40 p-4 backdrop-blur-md">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <p className="text-xs uppercase tracking-[0.2em] text-neutral-400">Session</p>
-              <p className="mt-1 text-sm text-neutral-200">
-                {hydrating
-                  ? "Syncing current operator..."
-                  : user
-                    ? `${user.email} (${user.role})`
-                    : "No active operator session. Register above to continue."}
-              </p>
-            </div>
-            {user ? (
-              <button
-                type="button"
-                onClick={handleSignOut}
-                className="rounded-lg border border-terminal-amber/80 bg-terminal-amber/10 px-3 py-2 text-xs font-semibold text-terminal-amber transition hover:bg-terminal-amber/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-terminal-amber"
-              >
-                Sign Out
-              </button>
-            ) : null}
-          </div>
-        </div>
-
         <div
-          className={`mt-4 rounded-lg border px-3 py-2 text-sm ${
+          className={`mt-5 rounded-lg border px-3 py-2 text-sm ${
             registrationOpen
               ? "border-phosphor/40 bg-phosphor/10 text-phosphor"
               : "border-terminal-amber/50 bg-terminal-amber/10 text-terminal-amber"

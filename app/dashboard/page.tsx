@@ -2,6 +2,7 @@ import Link from "next/link";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { CommandPalette } from "@/components/command-palette";
+import { DashboardSessionCard } from "@/components/dashboard-session-card";
 import { prisma } from "@/lib/prisma";
 import { decodeSessionToken } from "@/lib/session";
 import { getOrCreateSiteSettings } from "@/lib/site-settings";
@@ -131,6 +132,8 @@ export default async function DashboardPage() {
             </nav>
           </div>
         </header>
+
+        <DashboardSessionCard email={user.email} role={user.role} />
 
         <section className="mt-10 grid gap-5 lg:grid-cols-2">
           <article className="rounded-2xl border border-white/10 bg-black/40 p-6 backdrop-blur-md shadow-glow">
