@@ -1,0 +1,2 @@
+-- AddValue
+ALTER TYPE "UserRole" ADD VALUE IF NOT EXISTS 'JUDGE';

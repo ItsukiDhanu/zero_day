@@ -14,7 +14,7 @@ function parseRole(payload: RolePatchPayload) {
   }
 
   if (!(payload.role in UserRole)) {
-    throw new ApiError(400, "Role must be one of PARTICIPANT, ORGANIZER, or ADMIN.");
+    throw new ApiError(400, "Role must be one of PARTICIPANT, ORGANIZER, JUDGE, or ADMIN.");
   }
 
   return payload.role as UserRole;

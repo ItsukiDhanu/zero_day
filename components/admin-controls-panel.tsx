@@ -27,7 +27,7 @@ type AdminManagedUser = {
   id: string;
   name: string | null;
   email: string;
-  role: "PARTICIPANT" | "ORGANIZER" | "ADMIN";
+  role: "PARTICIPANT" | "ORGANIZER" | "JUDGE" | "ADMIN";
   year: string | null;
   branch: string | null;
   phoneNumber: string | null;
@@ -70,7 +70,7 @@ type AdminActionResponse = {
 type RoleActionResponse = AdminActionResponse & {
   user?: {
     id: string;
-    role: "PARTICIPANT" | "ORGANIZER" | "ADMIN";
+    role: "PARTICIPANT" | "ORGANIZER" | "JUDGE" | "ADMIN";
   };
 };
 
@@ -93,7 +93,7 @@ type UserSearchCacheEntry = {
   teamsById: Record<string, TeamSnapshot>;
 };
 
-const ROLE_OPTIONS = ["PARTICIPANT", "ORGANIZER", "ADMIN"] as const;
+const ROLE_OPTIONS = ["PARTICIPANT", "ORGANIZER", "JUDGE", "ADMIN"] as const;
 type ControlPanelMode = "admin" | "organizer";
 
 function formatAcademicYear(year: string | null) {
@@ -984,6 +984,8 @@ export function AdminControlsPanel({ mode = "admin" }: { mode?: ControlPanelMode
                             ? "border-phosphor/40 bg-phosphor/10 text-phosphor"
                             : managedUser.role === "ORGANIZER"
                               ? "border-terminal-amber/50 bg-terminal-amber/10 text-terminal-amber"
+                              : managedUser.role === "JUDGE"
+                                ? "border-cyan-400/50 bg-cyan-400/10 text-cyan-300"
                               : "border-white/20 bg-black/40 text-neutral-300"
                         }`}
                       >

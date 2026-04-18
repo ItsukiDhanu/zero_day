@@ -3,7 +3,7 @@ import { cookies } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 import { CommandPalette } from "@/components/command-palette";
 import { JudgingBoard, type JudgingTeamState } from "@/components/judging-board";
-import { canManageSiteSettings } from "@/lib/auth";
+import { canAccessJudging, canManageSiteSettings } from "@/lib/auth";
 import { getConfirmedTeamCounts } from "@/lib/confirmed-team-counts";
 import { prisma } from "@/lib/prisma";
 import { decodeSessionToken } from "@/lib/session";
@@ -54,7 +54,7 @@ export default async function JudgingPage() {
     },
   });
 
-  if (!currentUser || !canManageSiteSettings(currentUser.role)) {
+  if (!currentUser || !canAccessJudging(currentUser.role)) {
     notFound();
   }
 
@@ -177,12 +177,14 @@ export default async function JudgingPage() {
               >
                 Confirmed Teams
               </Link>
-              <Link
-                href="/organizer"
-                className="rounded-md border border-white/15 bg-black/40 px-2.5 py-1 text-neutral-300 transition hover:border-phosphor/40 hover:text-phosphor"
-              >
-                Organizer
-              </Link>
+              {canManageSiteSettings(currentUser.role) ? (
+                <Link
+                  href="/organizer"
+                  className="rounded-md border border-white/15 bg-black/40 px-2.5 py-1 text-neutral-300 transition hover:border-phosphor/40 hover:text-phosphor"
+                >
+                  Organizer
+                </Link>
+              ) : null}
               {currentUser.role === "ADMIN" ? (
                 <Link
                   href="/admin"

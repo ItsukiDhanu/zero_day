@@ -123,6 +123,10 @@ export function canManageSiteSettings(role: UserRole) {
   return role === "ADMIN" || role === "ORGANIZER";
 }
 
+export function canAccessJudging(role: UserRole) {
+  return role === "ADMIN" || role === "ORGANIZER" || role === "JUDGE";
+}
+
 export function isAdminRole(role: UserRole) {
   return role === "ADMIN";
 }

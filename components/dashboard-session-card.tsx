@@ -5,7 +5,7 @@ import { useState } from "react";
 
 type DashboardSessionCardProps = {
   email: string;
-  role: "PARTICIPANT" | "ORGANIZER" | "ADMIN";
+  role: "PARTICIPANT" | "ORGANIZER" | "JUDGE" | "ADMIN";
 };
 
 type LogoutResponse = {

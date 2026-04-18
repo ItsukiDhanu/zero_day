@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { CommandPalette } from "@/components/command-palette";
 import { TeamRepositorySubmitForm } from "@/components/team-repository-form";
+import { canAccessJudging } from "@/lib/auth";
 import { getConfirmedTeamCounts } from "@/lib/confirmed-team-counts";
 import { prisma } from "@/lib/prisma";
 import { decodeSessionToken } from "@/lib/session";
@@ -145,7 +146,7 @@ export default async function ConfirmedTeamsPage() {
               >
                 Confirmed Teams
               </Link>
-              {currentUser.role === "ADMIN" || currentUser.role === "ORGANIZER" ? (
+              {canAccessJudging(currentUser.role) ? (
                 <Link
                   href="/judging"
                   className="rounded-md border border-white/15 bg-black/40 px-2.5 py-1 text-neutral-300 transition hover:border-phosphor/40 hover:text-phosphor"

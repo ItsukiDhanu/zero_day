@@ -5,7 +5,7 @@ import { FormEvent, useState } from "react";
 type SessionUser = {
   id: string;
   email: string;
-  role: "PARTICIPANT" | "ORGANIZER" | "ADMIN";
+  role: "PARTICIPANT" | "ORGANIZER" | "JUDGE" | "ADMIN";
   name: string | null;
   year: string | null;
   branch: string | null;

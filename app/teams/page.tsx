@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { CommandPalette } from "@/components/command-palette";
 import { TeamDashboardShell } from "@/components/team-dashboard-shell";
+import { canAccessJudging } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { decodeSessionToken } from "@/lib/session";
 import { getOrCreateSiteSettings } from "@/lib/site-settings";
@@ -122,7 +123,7 @@ export default async function TeamsPage() {
                   Organizer
                 </Link>
               ) : null}
-              {user.role === "ORGANIZER" || user.role === "ADMIN" ? (
+              {canAccessJudging(user.role) ? (
                 <Link
                   href="/judging"
                   className="rounded-md border border-white/15 bg-black/40 px-2.5 py-1 text-neutral-300 transition hover:border-phosphor/40 hover:text-phosphor"

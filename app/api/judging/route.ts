@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { ApiError, isApiError } from "@/lib/api-error";
-import { canManageSiteSettings, getSessionUser } from "@/lib/auth";
+import { canAccessJudging, getSessionUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
 const MAX_CRITERION_SCORE = 20;
@@ -76,8 +76,8 @@ export async function PATCH(request: NextRequest) {
       throw new ApiError(401, "No active session.");
     }
 
-    if (!canManageSiteSettings(user.role)) {
-      throw new ApiError(403, "Only organizers and admins can submit judging marks.");
+    if (!canAccessJudging(user.role)) {
+      throw new ApiError(403, "Only judges, organizers, and admins can submit judging marks.");
     }
 
     const payload = parsePayload((await request.json()) as JudgingPatchPayload);
