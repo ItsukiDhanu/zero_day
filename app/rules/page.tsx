@@ -26,7 +26,7 @@ const rules = [
       "Your team must submit work produced during the official hackathon window.",
       "Using AI tools and open-source libraries is allowed, but plagiarism is strictly prohibited.",
       "Keep source code and documentation ready for mentor and jury review.",
-      "All teams must create a new GitHub repository for their project and submit the repository link on the Confirmed Teams page.",
+      "All teams must create a new GitHub repository for their project and submit the repository link on the Confirmed Teams page the moment the hackathon starts.",
       "All teammates must collaborate and work together on that same repository.",
     ],
   },
