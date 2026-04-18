@@ -1,7 +1,7 @@
 import { UserRole } from "@prisma/client";
 import { NextRequest, NextResponse } from "next/server";
 import { ApiError, isApiError } from "@/lib/api-error";
-import { getSessionIdentity, isAdminRole } from "@/lib/auth";
+import { getSessionIdentity, invalidateSessionIdentityCache, isAdminRole } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
 type RolePatchPayload = {
@@ -48,6 +48,8 @@ export async function PATCH(request: NextRequest, context: { params: Promise<{ u
         role: true,
       },
     });
+
+    invalidateSessionIdentityCache(updatedUser.id);
 
     return NextResponse.json({
       user: updatedUser,

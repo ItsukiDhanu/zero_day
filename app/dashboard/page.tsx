@@ -53,6 +53,7 @@ export default async function DashboardPage() {
             },
             members: {
               orderBy: { createdAt: "asc" },
+              take: 4,
               select: {
                 id: true,
                 name: true,

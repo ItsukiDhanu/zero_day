@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { ApiError, isApiError } from "@/lib/api-error";
-import { getSessionIdentity, isAdminRole } from "@/lib/auth";
+import { getSessionIdentity, invalidateSessionIdentityCache, isAdminRole } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
 export async function DELETE(request: NextRequest, context: { params: Promise<{ userId: string }> }) {
@@ -36,6 +36,8 @@ export async function DELETE(request: NextRequest, context: { params: Promise<{ 
     await prisma.user.delete({
       where: { id: existingUser.id },
     });
+
+    invalidateSessionIdentityCache(existingUser.id);
 
     return NextResponse.json({
       message: `Deleted user ${existingUser.email}.`,

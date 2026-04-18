@@ -84,8 +84,14 @@ export async function POST(request: NextRequest) {
       select: {
         id: true,
         captainId: true,
+        _count: {
+          select: {
+            members: true,
+          },
+        },
         members: {
           orderBy: { createdAt: "asc" },
+          take: 1,
           select: {
             id: true,
           },
@@ -97,7 +103,7 @@ export async function POST(request: NextRequest) {
       throw new ApiError(404, "Team not found.");
     }
 
-    const memberCount = team.members.length;
+    const memberCount = team._count.members;
     if (memberCount < 2 || memberCount > 4) {
       throw new ApiError(409, "Repository link can be submitted only for confirmed teams (2-4 members).");
     }

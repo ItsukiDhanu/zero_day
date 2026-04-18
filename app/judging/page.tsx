@@ -4,6 +4,7 @@ import { notFound, redirect } from "next/navigation";
 import { CommandPalette } from "@/components/command-palette";
 import { JudgingBoard, type JudgingTeamState } from "@/components/judging-board";
 import { canManageSiteSettings } from "@/lib/auth";
+import { getConfirmedTeamCounts } from "@/lib/confirmed-team-counts";
 import { prisma } from "@/lib/prisma";
 import { decodeSessionToken } from "@/lib/session";
 
@@ -45,46 +46,47 @@ export default async function JudgingPage() {
     redirect("/login?next=/judging");
   }
 
-  const [currentUser, teams] = await Promise.all([
-    prisma.user.findUnique({
-      where: { id: userId },
-      select: {
-        id: true,
-        role: true,
-      },
-    }),
-    prisma.team.findMany({
-      orderBy: { createdAt: "asc" },
-      select: {
-        id: true,
-        name: true,
-        repositoryUrl: true,
-        _count: {
-          select: {
-            members: true,
-          },
-        },
-        members: {
-          orderBy: { createdAt: "asc" },
-          select: {
-            id: true,
-            name: true,
-            email: true,
-          },
-        },
-      },
-    }),
-  ]);
+  const currentUser = await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      id: true,
+      role: true,
+    },
+  });
 
   if (!currentUser || !canManageSiteSettings(currentUser.role)) {
     notFound();
   }
 
-  const confirmedTeams = teams.filter(
-    (team) => team._count.members >= 2 && team._count.members <= 4,
+  const confirmedTeamCounts = await getConfirmedTeamCounts();
+  const confirmedTeamIds = confirmedTeamCounts.map((team) => team.teamId);
+  const confirmedTeamCountById = new Map(
+    confirmedTeamCounts.map((team) => [team.teamId, team.memberCount]),
   );
 
-  const confirmedTeamIds = confirmedTeams.map((team) => team.id);
+  const teams = confirmedTeamIds.length
+    ? await prisma.team.findMany({
+        where: {
+          id: {
+            in: confirmedTeamIds,
+          },
+        },
+        orderBy: { createdAt: "asc" },
+        select: {
+          id: true,
+          name: true,
+          repositoryUrl: true,
+          members: {
+            orderBy: { createdAt: "asc" },
+            take: 4,
+            select: {
+              email: true,
+              name: true,
+            },
+          },
+        },
+      })
+    : [];
 
   const judgingScores = confirmedTeamIds.length
     ? await prismaWithJudging.teamJudgingScore.findMany({
@@ -109,13 +111,13 @@ export default async function JudgingPage() {
 
   const judgingByTeamId = new Map(judgingScores.map((judgingScore) => [judgingScore.teamId, judgingScore]));
 
-  const judgingTeams: JudgingTeamState[] = confirmedTeams.map((team) => {
+  const judgingTeams: JudgingTeamState[] = teams.map((team) => {
     const judgingScore = judgingByTeamId.get(team.id);
 
     return {
       id: team.id,
       name: team.name,
-      memberCount: team._count.members,
+      memberCount: confirmedTeamCountById.get(team.id) ?? team.members.length,
       members: team.members.map(displayMemberName),
       repositoryUrl: team.repositoryUrl,
       judging: judgingScore

@@ -35,6 +35,7 @@ export async function GET(request: NextRequest) {
             },
             members: {
               orderBy: { createdAt: "asc" },
+              take: 4,
               select: {
                 id: true,
                 name: true,

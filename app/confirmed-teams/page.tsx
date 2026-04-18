@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { CommandPalette } from "@/components/command-palette";
 import { TeamRepositorySubmitForm } from "@/components/team-repository-form";
+import { getConfirmedTeamCounts } from "@/lib/confirmed-team-counts";
 import { prisma } from "@/lib/prisma";
 import { decodeSessionToken } from "@/lib/session";
 import { getOrCreateSiteSettings } from "@/lib/site-settings";
@@ -29,7 +30,7 @@ export default async function ConfirmedTeamsPage() {
 
   const isAuthenticated = true;
 
-  const [currentUser, teams, settings] = await Promise.all([
+  const [currentUser, settings] = await Promise.all([
     prisma.user.findUnique({
       where: { id: userId },
       select: {
@@ -48,31 +49,11 @@ export default async function ConfirmedTeamsPage() {
             },
             members: {
               orderBy: { createdAt: "asc" },
+              take: 1,
               select: {
                 id: true,
               },
             },
-          },
-        },
-      },
-    }),
-    prisma.team.findMany({
-      orderBy: { createdAt: "asc" },
-      select: {
-        id: true,
-        name: true,
-        repositoryUrl: true,
-        _count: {
-          select: {
-            members: true,
-          },
-        },
-        members: {
-          orderBy: { createdAt: "asc" },
-          select: {
-            id: true,
-            name: true,
-            email: true,
           },
         },
       },
@@ -84,14 +65,37 @@ export default async function ConfirmedTeamsPage() {
     redirect("/login?next=/confirmed-teams");
   }
 
-  const confirmedTeams = teams.filter(
-    (team) => team._count.members >= 2 && team._count.members <= 4,
+  const confirmedTeamCounts = await getConfirmedTeamCounts();
+  const confirmedTeamIds = confirmedTeamCounts.map((team) => team.teamId);
+  const confirmedTeamCountById = new Map(
+    confirmedTeamCounts.map((team) => [team.teamId, team.memberCount]),
   );
 
-  const confirmedParticipantCount = confirmedTeams.reduce(
-    (sum, team) => sum + team._count.members,
-    0,
-  );
+  const confirmedTeams = confirmedTeamIds.length
+    ? await prisma.team.findMany({
+        where: {
+          id: {
+            in: confirmedTeamIds,
+          },
+        },
+        orderBy: { createdAt: "asc" },
+        select: {
+          id: true,
+          name: true,
+          repositoryUrl: true,
+          members: {
+            orderBy: { createdAt: "asc" },
+            take: 4,
+            select: {
+              name: true,
+              email: true,
+            },
+          },
+        },
+      })
+    : [];
+
+  const confirmedParticipantCount = confirmedTeamCounts.reduce((sum, team) => sum + team.memberCount, 0);
 
   const currentTeam = currentUser.team;
   const currentTeamMemberCount = currentTeam?._count.members ?? 0;
@@ -206,7 +210,7 @@ export default async function ConfirmedTeamsPage() {
                     <div className="flex flex-wrap items-center justify-between gap-3">
                       <div>
                         <h2 className="text-lg font-semibold text-neutral-100">{team.name}</h2>
-                        <p className="mt-1 text-xs text-neutral-400">{team._count.members}/4 members</p>
+                        <p className="mt-1 text-xs text-neutral-400">{confirmedTeamCountById.get(team.id) ?? team.members.length}/4 members</p>
                       </div>
                       <span className="rounded-md border border-phosphor/40 bg-phosphor/10 px-2 py-1 text-[11px] font-semibold text-phosphor">
                         CONFIRMED
@@ -217,7 +221,7 @@ export default async function ConfirmedTeamsPage() {
                       <p className="text-xs uppercase tracking-[0.18em] text-neutral-400">Members</p>
                       <ul className="mt-2 grid gap-1 text-sm text-neutral-200">
                         {team.members.map((member) => (
-                          <li key={member.id}>{displayMemberName(member)}</li>
+                          <li key={`${team.id}-${member.email}`}>{displayMemberName(member)}</li>
                         ))}
                       </ul>
                     </div>

@@ -182,6 +182,7 @@ export async function POST(request: NextRequest) {
           },
           members: {
             orderBy: { createdAt: "asc" },
+            take: 4,
             select: {
               id: true,
               name: true,

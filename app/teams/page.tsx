@@ -65,6 +65,7 @@ export default async function TeamsPage() {
             },
             members: {
               orderBy: { createdAt: "asc" },
+              take: 4,
               select: {
                 id: true,
                 name: true,
