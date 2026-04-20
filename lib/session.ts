@@ -5,7 +5,17 @@ const SESSION_COOKIE_NAME = "zd_session";
 const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 14;
 
 function getSessionSecret() {
-  return process.env.SESSION_SECRET ?? "dev-change-this-secret";
+  const configuredSecret = process.env.SESSION_SECRET;
+
+  if (configuredSecret && configuredSecret.length >= 32) {
+    return configuredSecret;
+  }
+
+  if (process.env.NODE_ENV === "production") {
+    throw new Error("SESSION_SECRET must be set to a value of at least 32 characters in production.");
+  }
+
+  return configuredSecret || "dev-change-this-secret";
 }
 
 function signUserId(userId: string) {
