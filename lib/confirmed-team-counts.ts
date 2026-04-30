@@ -7,10 +7,13 @@ export type ConfirmedTeamCount = {
 
 export async function getConfirmedTeamCounts(): Promise<ConfirmedTeamCount[]> {
   const rows = await prisma.$queryRaw<ConfirmedTeamCount[]>`
-    SELECT "teamId", COUNT(*)::int AS "memberCount"
-    FROM "User"
-    WHERE "teamId" IS NOT NULL
-    GROUP BY "teamId"
+    SELECT u."teamId", COUNT(*)::int AS "memberCount"
+    FROM "User" u
+    INNER JOIN "TeamPayment" tp
+      ON tp."team_id" = u."teamId"
+      AND tp."status" = 'VERIFIED'
+    WHERE u."teamId" IS NOT NULL
+    GROUP BY u."teamId"
     HAVING COUNT(*) BETWEEN 2 AND 4
   `;
 

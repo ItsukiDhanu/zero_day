@@ -161,7 +161,7 @@ export default async function ConfirmedTeamsPage() {
         <section className="mx-auto mt-10 w-full max-w-5xl pb-12">
           <div className="rounded-2xl border border-white/10 bg-black/40 p-6 backdrop-blur-md shadow-glow sm:p-8">
             <p className="text-xs uppercase tracking-[0.2em] text-phosphor/90">Confirmed Team Roster</p>
-            <h1 className="mt-2 text-2xl font-semibold text-neutral-100 sm:text-3xl">Confirmed Teams (2-4 Members)</h1>
+            <h1 className="mt-2 text-2xl font-semibold text-neutral-100 sm:text-3xl">Confirmed Teams (2-4 Members + Payment Verified)</h1>
 
             <div className="mt-5 grid gap-4 sm:grid-cols-2">
               <div className="rounded-lg border border-white/10 bg-black/60 px-3 py-2">
@@ -203,7 +203,7 @@ export default async function ConfirmedTeamsPage() {
             <div className="mt-6 grid gap-4">
               {confirmedTeams.length === 0 ? (
                 <p className="rounded-lg border border-white/10 bg-black/60 px-3 py-3 text-sm text-neutral-400">
-                  No confirmed teams yet. A team appears here when it has at least 2 members.
+                  No confirmed teams yet. A team appears here only after it has 2 to 4 members and payment is verified.
                 </p>
               ) : (
                 confirmedTeams.map((team) => (
