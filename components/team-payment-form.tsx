@@ -17,6 +17,7 @@ const upiParams = new URLSearchParams({
 });
 
 const UPI_URI = `upi://pay?${upiParams.toString()}`;
+const QR_IMAGE_URL = `https://api.qrserver.com/v1/create-qr-code/?size=320x320&data=${encodeURIComponent(UPI_URI)}`;
 
 export function TeamPaymentForm() {
   const [paymentStatus, setPaymentStatus] = useState<string | null>(null);
@@ -170,13 +171,20 @@ export function TeamPaymentForm() {
       </p>
 
       <div className="mb-6 rounded-lg border border-white/10 bg-black/60 p-4">
-        <a
-          href={UPI_URI}
-          className="inline-flex rounded-md border border-phosphor/70 bg-phosphor/10 px-3 py-2 text-sm font-semibold text-phosphor transition hover:bg-phosphor/20"
-        >
-          Open UPI App
-        </a>
-        <p className="mt-3 text-sm text-neutral-300">Registration Fee: Rs {REGISTRATION_FEE}</p>
+        <img
+          src={QR_IMAGE_URL}
+          alt="UPI payment QR code"
+          className="mx-auto h-64 w-64 rounded-md border border-white/10 bg-white p-2"
+        />
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+          <a
+            href={UPI_URI}
+            className="inline-flex rounded-md border border-phosphor/70 bg-phosphor/10 px-3 py-2 text-sm font-semibold text-phosphor transition hover:bg-phosphor/20"
+          >
+            Open UPI App
+          </a>
+          <p className="text-sm text-neutral-300">Registration Fee: Rs {REGISTRATION_FEE}</p>
+        </div>
       </div>
 
       {error && (
