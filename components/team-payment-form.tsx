@@ -17,7 +17,6 @@ const upiParams = new URLSearchParams({
 });
 
 const UPI_URI = `upi://pay?${upiParams.toString()}`;
-const QR_IMAGE_URL = `https://api.qrserver.com/v1/create-qr-code/?size=320x320&data=${encodeURIComponent(UPI_URI)}`;
 
 export function TeamPaymentForm() {
   const [paymentStatus, setPaymentStatus] = useState<string | null>(null);
@@ -170,32 +169,14 @@ export function TeamPaymentForm() {
         Pay with UPI and submit your transaction details. Once verified, your team can submit the project repository.
       </p>
 
-      <div className="mb-6 grid gap-4 lg:grid-cols-[320px,1fr]">
-        <div className="rounded-lg border border-phosphor/30 bg-black/60 p-3">
-          <img src={QR_IMAGE_URL} alt="UPI payment QR code" className="mx-auto h-64 w-64 rounded-md border border-white/10 bg-white p-2" />
-          <p className="mt-3 text-center text-xs text-neutral-400">Scan to pay via any UPI app</p>
-        </div>
-
-        <div className="rounded-lg border border-white/10 bg-black/60 p-4 text-sm text-neutral-200">
-          <p className="text-xs uppercase tracking-[0.2em] text-phosphor/90">Payment Details</p>
-          <div className="mt-3 space-y-2">
-            <p>
-              <span className="text-neutral-400">UPI ID:</span> <span className="font-semibold text-phosphor">{UPI_ID}</span>
-            </p>
-            <p>
-              <span className="text-neutral-400">Registration Fee:</span> <span className="font-semibold text-phosphor">Rs {REGISTRATION_FEE}</span>
-            </p>
-            <p>
-              <span className="text-neutral-400">Payment Note:</span> <span className="font-semibold text-phosphor">{PAYMENT_NOTE}</span>
-            </p>
-          </div>
-          <a
-            href={UPI_URI}
-            className="mt-4 inline-flex rounded-md border border-phosphor/70 bg-phosphor/10 px-3 py-2 text-sm font-semibold text-phosphor transition hover:bg-phosphor/20"
-          >
-            Open UPI App
-          </a>
-        </div>
+      <div className="mb-6 rounded-lg border border-white/10 bg-black/60 p-4">
+        <a
+          href={UPI_URI}
+          className="inline-flex rounded-md border border-phosphor/70 bg-phosphor/10 px-3 py-2 text-sm font-semibold text-phosphor transition hover:bg-phosphor/20"
+        >
+          Open UPI App
+        </a>
+        <p className="mt-3 text-sm text-neutral-300">Registration Fee: Rs {REGISTRATION_FEE}</p>
       </div>
 
       {error && (
