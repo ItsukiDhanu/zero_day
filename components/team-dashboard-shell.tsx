@@ -3,7 +3,7 @@
 import { FormEvent, useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { AlertCircle, CheckCircle, Clock } from "lucide-react";
+import { AlertCircle, CheckCircle, Clock, AlertTriangle } from "lucide-react";
 
 type SessionUser = {
   id: string;
@@ -225,7 +225,20 @@ export function TeamDashboardShell({
         ) : null}
 
         {hasTeam && team ? (
-          <div className="mt-7 rounded-xl border border-phosphor/40 bg-phosphor/10 p-5 backdrop-blur-md">
+          <div className={`mt-7 rounded-xl border p-5 backdrop-blur-md ${
+              paymentStatus !== "VERIFIED"
+                ? "border-red-700 bg-red-900 text-red-50"
+                : "border-phosphor/40 bg-phosphor/10"
+            }`}>
+            {paymentStatus !== "VERIFIED" ? (
+              <div className="mb-4 flex items-start gap-3 rounded-md border border-red-700 bg-red-800/60 p-3">
+                <AlertTriangle className="h-5 w-5 flex-shrink-0 text-red-200" />
+                <div>
+                  <p className="text-sm font-semibold text-red-100">Payment required</p>
+                  <p className="text-xs text-red-200">Complete your team&apos;s registration payment to unlock submissions and confirmations.</p>
+                </div>
+              </div>
+            ) : null}
             <p className="text-xs uppercase tracking-[0.2em] text-phosphor/90">Active Team</p>
             <h3 className="mt-2 text-xl font-semibold text-neutral-100">{team.name}</h3>
 
