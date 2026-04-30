@@ -130,3 +130,11 @@ export function canAccessJudging(role: UserRole) {
 export function isAdminRole(role: UserRole) {
   return role === "ADMIN";
 }
+
+export async function isTeamPaymentVerified(teamId: string): Promise<boolean> {
+  const payment = await prisma.teamPayment.findUnique({
+    where: { teamId },
+    select: { status: true },
+  });
+  return payment?.status === "VERIFIED";
+}

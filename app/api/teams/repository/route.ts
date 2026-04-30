@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { ApiError, isApiError } from "@/lib/api-error";
-import { getSessionUser } from "@/lib/auth";
+import { getSessionUser, isTeamPaymentVerified } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getOrCreateSiteSettings } from "@/lib/site-settings";
 
@@ -75,6 +75,12 @@ export async function POST(request: NextRequest) {
     const settings = await getOrCreateSiteSettings();
     if (!settings.repositorySubmissionOpen) {
       throw new ApiError(403, "Repository submission is currently closed by organizers.");
+    }
+
+    // Check if team has verified payment
+    const paymentVerified = await isTeamPaymentVerified(user.teamId);
+    if (!paymentVerified) {
+      throw new ApiError(402, "Team registration payment must be verified before submitting repository.");
     }
 
     const payload = parsePayload((await request.json()) as TeamRepositoryPayload);
