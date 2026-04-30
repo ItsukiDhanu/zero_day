@@ -3,15 +3,29 @@
 import { useState, useEffect } from "react";
 import { AlertCircle, CheckCircle, Clock } from "lucide-react";
 
+const UPI_ID = "9606726468@axl";
+const REGISTRATION_FEE = "150";
+const PAYMENT_NOTE = "Zero Day registration";
+const PAYEE_NAME = "Zero Day";
+
+const upiParams = new URLSearchParams({
+  pa: UPI_ID,
+  pn: PAYEE_NAME,
+  am: REGISTRATION_FEE,
+  cu: "INR",
+  tn: PAYMENT_NOTE,
+});
+
+const UPI_URI = `upi://pay?${upiParams.toString()}`;
+const QR_IMAGE_URL = `https://api.qrserver.com/v1/create-qr-code/?size=320x320&data=${encodeURIComponent(UPI_URI)}`;
+
 export function TeamPaymentForm() {
   const [paymentStatus, setPaymentStatus] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [formData, setFormData] = useState({
-    paymentMethod: "UPI",
-    transactionReference: "",
-    proofFileUrl: "",
-  });
+  const [transactionId, setTransactionId] = useState("");
+  const [receiptFile, setReceiptFile] = useState<File | null>(null);
 
   // Fetch current payment status on mount
   useEffect(() => {
@@ -38,10 +52,36 @@ export function TeamPaymentForm() {
     setError(null);
 
     try {
+      if (!receiptFile) {
+        setError("Payment receipt or screenshot is required");
+        return;
+      }
+
+      setUploading(true);
+      const uploadBody = new FormData();
+      uploadBody.append("receiptFile", receiptFile);
+
+      const uploadRes = await fetch("/api/payments/upload", {
+        method: "POST",
+        body: uploadBody,
+      });
+
+      const uploadData = await uploadRes.json();
+
+      if (!uploadRes.ok || !uploadData.url) {
+        setError(uploadData.error || "Failed to upload receipt file");
+        return;
+      }
+
+      const uploadedReceiptUrl = String(uploadData.url);
+
       const res = await fetch("/api/payments/submit", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          transactionId,
+          receiptEvidence: uploadedReceiptUrl,
+        }),
       });
 
       const data = await res.json();
@@ -52,14 +92,12 @@ export function TeamPaymentForm() {
       }
 
       setPaymentStatus(data.status);
-      setFormData({
-        paymentMethod: "UPI",
-        transactionReference: "",
-        proofFileUrl: "",
-      });
+      setTransactionId("");
+      setReceiptFile(null);
     } catch {
       setError("Network error - please try again");
     } finally {
+      setUploading(false);
       setLoading(false);
     }
   };
@@ -67,12 +105,12 @@ export function TeamPaymentForm() {
   // If payment is verified, show success
   if (paymentStatus === "VERIFIED") {
     return (
-      <div className="rounded-lg border border-green-200 bg-green-50 p-6">
+      <div className="rounded-lg border border-green-500/30 bg-green-500/10 p-6">
         <div className="flex items-center gap-3">
-          <CheckCircle className="h-6 w-6 text-green-600" />
+          <CheckCircle className="h-6 w-6 text-green-400" />
           <div>
-            <h3 className="font-semibold text-green-900">Payment Verified</h3>
-            <p className="text-sm text-green-700">
+            <h3 className="font-semibold text-green-300">Payment Verified</h3>
+            <p className="text-sm text-green-200/90">
               Your team&apos;s registration fee has been verified. You can now
               submit your project repository.
             </p>
@@ -85,12 +123,12 @@ export function TeamPaymentForm() {
   // If payment is pending, show waiting state
   if (paymentStatus === "PENDING") {
     return (
-      <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-6">
+      <div className="rounded-lg border border-terminal-amber/40 bg-terminal-amber/10 p-6">
         <div className="flex items-center gap-3">
-          <Clock className="h-6 w-6 text-yellow-600" />
+          <Clock className="h-6 w-6 text-terminal-amber" />
           <div>
-            <h3 className="font-semibold text-yellow-900">Payment Pending</h3>
-            <p className="text-sm text-yellow-700">
+            <h3 className="font-semibold text-terminal-amber">Payment Pending</h3>
+            <p className="text-sm text-terminal-amber/90">
               Your payment submission is under review. You&apos;ll be notified once
               it&apos;s verified.
             </p>
@@ -103,18 +141,18 @@ export function TeamPaymentForm() {
   // If payment is rejected, show error with reason
   if (paymentStatus === "REJECTED") {
     return (
-      <div className="rounded-lg border border-red-200 bg-red-50 p-6">
+      <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-6">
         <div className="flex items-center gap-3">
-          <AlertCircle className="h-6 w-6 text-red-600" />
+          <AlertCircle className="h-6 w-6 text-red-400" />
           <div>
-            <h3 className="font-semibold text-red-900">Payment Rejected</h3>
-            <p className="text-sm text-red-700 mb-3">
+            <h3 className="font-semibold text-red-300">Payment Rejected</h3>
+            <p className="text-sm text-red-200/90 mb-3">
               Your payment submission was rejected. Please resubmit with correct
               details.
             </p>
             <button
               onClick={() => setPaymentStatus(null)}
-              className="text-sm font-medium text-red-600 hover:text-red-700 underline"
+              className="text-sm font-medium text-red-300 hover:text-red-200 underline"
             >
               Submit again
             </button>
@@ -126,107 +164,87 @@ export function TeamPaymentForm() {
 
   // Show payment form
   return (
-    <div className="rounded-lg border border-gray-200 bg-white p-6">
-      <h2 className="text-xl font-semibold mb-4">Register Your Team</h2>
-      <p className="text-gray-600 text-sm mb-6">
-        Submit your registration fee using UPI or Bank Transfer. Once verified,
-        you&apos;ll be able to submit your project repository.
+    <div className="rounded-xl border border-white/10 bg-black/50 p-6 backdrop-blur-md">
+      <h2 className="text-xl font-semibold text-neutral-100 mb-4">Register Your Team</h2>
+      <p className="text-neutral-300 text-sm mb-6">
+        Pay with UPI and submit your transaction details. Once verified, your team can submit the project repository.
       </p>
 
+      <div className="mb-6 grid gap-4 lg:grid-cols-[320px,1fr]">
+        <div className="rounded-lg border border-phosphor/30 bg-black/60 p-3">
+          <img src={QR_IMAGE_URL} alt="UPI payment QR code" className="mx-auto h-64 w-64 rounded-md border border-white/10 bg-white p-2" />
+          <p className="mt-3 text-center text-xs text-neutral-400">Scan to pay via any UPI app</p>
+        </div>
+
+        <div className="rounded-lg border border-white/10 bg-black/60 p-4 text-sm text-neutral-200">
+          <p className="text-xs uppercase tracking-[0.2em] text-phosphor/90">Payment Details</p>
+          <div className="mt-3 space-y-2">
+            <p>
+              <span className="text-neutral-400">UPI ID:</span> <span className="font-semibold text-phosphor">{UPI_ID}</span>
+            </p>
+            <p>
+              <span className="text-neutral-400">Registration Fee:</span> <span className="font-semibold text-phosphor">Rs {REGISTRATION_FEE}</span>
+            </p>
+            <p>
+              <span className="text-neutral-400">Payment Note:</span> <span className="font-semibold text-phosphor">{PAYMENT_NOTE}</span>
+            </p>
+          </div>
+          <a
+            href={UPI_URI}
+            className="mt-4 inline-flex rounded-md border border-phosphor/70 bg-phosphor/10 px-3 py-2 text-sm font-semibold text-phosphor transition hover:bg-phosphor/20"
+          >
+            Open UPI App
+          </a>
+        </div>
+      </div>
+
       {error && (
-        <div className="rounded-lg border border-red-200 bg-red-50 p-4 mb-6">
-          <p className="text-sm text-red-700">{error}</p>
+        <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-4 mb-6">
+          <p className="text-sm text-red-200">{error}</p>
         </div>
       )}
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Payment Method *
-          </label>
-          <select
-            value={formData.paymentMethod}
-            onChange={(e) =>
-              setFormData({ ...formData, paymentMethod: e.target.value })
-            }
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          >
-            <option value="UPI">UPI</option>
-            <option value="BANK_TRANSFER">Bank Transfer</option>
-          </select>
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Transaction ID / Reference Number *
+          <label className="block text-sm font-medium text-neutral-200 mb-2">
+            Transaction ID *
           </label>
           <input
             type="text"
-            value={formData.transactionReference}
-            onChange={(e) =>
-              setFormData({
-                ...formData,
-                transactionReference: e.target.value,
-              })
-            }
-            placeholder="e.g., UPI transaction ID or Bank confirmation number"
+            value={transactionId}
+            onChange={(e) => setTransactionId(e.target.value)}
+            placeholder="Enter UPI transaction ID"
             required
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full rounded-lg border border-white/10 bg-black/60 px-3 py-2 text-neutral-100 outline-none transition focus:border-phosphor focus:ring-2 focus:ring-phosphor/30"
           />
-          <p className="text-xs text-gray-500 mt-1">
-            This helps us verify your payment
-          </p>
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Proof File URL (optional)
+          <label className="block text-sm font-medium text-neutral-200 mb-2">
+            Payment Receipt or Screenshot *
           </label>
           <input
-            type="url"
-            value={formData.proofFileUrl}
+            type="file"
+            accept="image/png,image/jpeg,image/jpg,image/webp,application/pdf"
             onChange={(e) =>
-              setFormData({ ...formData, proofFileUrl: e.target.value })
+              setReceiptFile(e.target.files?.[0] ?? null)
             }
-            placeholder="e.g., link to screenshot or receipt"
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            required
+            className="w-full rounded-lg border border-white/10 bg-black/60 px-3 py-2 text-neutral-100 outline-none transition focus:border-phosphor focus:ring-2 focus:ring-phosphor/30"
           />
-          <p className="text-xs text-gray-500 mt-1">
-            Upload receipt/screenshot to a service like Imgur and paste the
-            link
+          <p className="text-xs text-neutral-400 mt-1">
+            Upload image or PDF. Max file size: 5MB.
           </p>
         </div>
 
         <button
           type="submit"
-          disabled={loading || !formData.transactionReference}
-          className="w-full bg-blue-600 text-white font-medium py-2 rounded-lg hover:bg-blue-700 disabled:bg-gray-400 transition"
+          disabled={loading || uploading || !transactionId.trim() || !receiptFile}
+          className="w-full rounded-lg border border-phosphor bg-phosphor px-4 py-2 text-sm font-semibold text-black transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-70"
         >
-          {loading ? "Submitting..." : "Submit Payment"}
+          {uploading ? "Uploading receipt..." : loading ? "Submitting..." : "Submit Payment"}
         </button>
       </form>
-
-      <div className="mt-6 pt-4 border-t border-gray-200">
-        <h3 className="text-sm font-semibold text-gray-900 mb-2">
-          Payment Instructions
-        </h3>
-        <div className="text-sm text-gray-600 space-y-2">
-          <p>
-            <strong>Amount:</strong> ₹500 (subject to change - contact organizers
-            for current amount)
-          </p>
-          <p>
-            <strong>For UPI:</strong> <code className="bg-gray-100 px-1">upi://</code> payments or any UPI app
-          </p>
-          <p>
-            <strong>For Bank Transfer:</strong> Contact organizers for bank
-            details
-          </p>
-          <p className="text-gray-500 italic mt-3">
-            After submitting, wait for verification from our admin team.
-          </p>
-        </div>
-      </div>
     </div>
   );
 }

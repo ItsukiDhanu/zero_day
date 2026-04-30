@@ -14,22 +14,35 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { paymentMethod, transactionReference, proofFileUrl } = body;
+    const transactionId =
+      typeof body.transactionId === "string"
+        ? body.transactionId.trim()
+        : typeof body.transactionReference === "string"
+          ? body.transactionReference.trim()
+          : "";
+    const receiptEvidence =
+      typeof body.receiptEvidence === "string"
+        ? body.receiptEvidence.trim()
+        : typeof body.proofFileUrl === "string"
+          ? body.proofFileUrl.trim()
+          : "";
 
     // Validate inputs
-    if (!paymentMethod || !transactionReference) {
+    if (!transactionId) {
       return NextResponse.json(
-        { error: "Payment method and transaction reference are required" },
+        { error: "Transaction ID is required" },
         { status: 400 }
       );
     }
 
-    if (!["UPI", "BANK_TRANSFER"].includes(paymentMethod)) {
+    if (!receiptEvidence) {
       return NextResponse.json(
-        { error: "Invalid payment method" },
+        { error: "Payment receipt or screenshot is required" },
         { status: 400 }
       );
     }
+
+    const paymentMethod = "UPI";
 
     // Check if payment record already exists
     const existingPayment = await prisma.teamPayment.findUnique({
@@ -49,8 +62,8 @@ export async function POST(req: NextRequest) {
         where: { id: existingPayment.id },
         data: {
           paymentMethod,
-          transactionReference,
-          proofFileUrl: proofFileUrl || null,
+          transactionReference: transactionId,
+          proofFileUrl: receiptEvidence || null,
           status: "PENDING",
           rejectionReason: null,
           updatedAt: new Date(),
@@ -69,8 +82,8 @@ export async function POST(req: NextRequest) {
       data: {
         teamId: user.teamId,
         paymentMethod,
-        transactionReference,
-        proofFileUrl: proofFileUrl || null,
+        transactionReference: transactionId,
+        proofFileUrl: receiptEvidence || null,
         status: "PENDING",
       },
     });
