@@ -31,6 +31,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "File too large. Max size is 5MB" }, { status: 400 });
     }
 
+    if (!process.env.BLOB_READ_WRITE_TOKEN) {
+      console.error("[Payment Upload Error] BLOB_READ_WRITE_TOKEN not set");
+      return NextResponse.json(
+        { error: "Server configuration error: storage not available" },
+        { status: 500 }
+      );
+    }
+
     const safeName = sanitizeFilename(file.name || "receipt");
     const key = `payments/${user.teamId}/${Date.now()}-${safeName}`;
 
@@ -44,7 +52,7 @@ export async function POST(req: NextRequest) {
       pathname: uploaded.pathname,
     });
   } catch (error) {
-    console.error("[Payment Upload Error]", error);
+    console.error("[Payment Upload Error]", error instanceof Error ? error.message : String(error));
     return NextResponse.json({ error: "Failed to upload receipt file" }, { status: 500 });
   }
 }
