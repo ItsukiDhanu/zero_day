@@ -2,6 +2,7 @@
 
 import { FormEvent, useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { AlertCircle, CheckCircle, Clock } from "lucide-react";
 
 type SessionUser = {
@@ -45,6 +46,7 @@ export function TeamDashboardShell({
   initialTeam,
   initialRegistrationOpen,
 }: TeamDashboardShellProps) {
+  const router = useRouter();
   const [teamName, setTeamName] = useState("");
   const [joinTeamName, setJoinTeamName] = useState("");
   const [joinCode, setJoinCode] = useState("");
@@ -125,9 +127,10 @@ export function TeamDashboardShell({
         setUser((current) => (current ? { ...current, teamId: payload.team?.id ?? current.teamId } : current));
       }
 
-      setCreateMessage(payload.message ?? "Team booted. Share team name + join code with up to 3 teammates.");
+      setCreateMessage("Team created. Redirecting to payment...");
       setJoinMessage("");
       setTeamName("");
+      router.push("/payment?from=teams&action=create");
     } catch (error) {
       setCreateMessage(error instanceof Error ? error.message : "Team creation failed.");
     } finally {
@@ -184,10 +187,11 @@ export function TeamDashboardShell({
         setUser((current) => (current ? { ...current, teamId: payload.team?.id ?? current.teamId } : current));
       }
 
-      setJoinMessage(payload.message ?? "Team join successful.");
+      setJoinMessage("Team joined. Redirecting to payment...");
       setCreateMessage("");
       setJoinCode("");
       setJoinTeamName("");
+      router.push("/payment?from=teams&action=join");
     } catch (error) {
       setJoinMessage(error instanceof Error ? error.message : "Team join failed.");
     } finally {

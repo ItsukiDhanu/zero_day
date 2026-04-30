@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionUser, canManageSiteSettings } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { sendEmail } from "@/lib/notify";
 
 export async function PATCH(req: NextRequest) {
   try {
@@ -32,9 +33,17 @@ export async function PATCH(req: NextRequest) {
       );
     }
 
-    // Find the payment record
+    // Find the payment record with team and members
     const payment = await prisma.teamPayment.findUnique({
       where: { id: paymentId },
+      include: {
+        team: {
+          include: {
+            members: { select: { email: true, name: true } },
+            captain: { select: { email: true, name: true } },
+          },
+        },
+      },
     });
 
     if (!payment) {
@@ -55,6 +64,36 @@ export async function PATCH(req: NextRequest) {
         updatedAt: new Date(),
       },
     });
+
+    // Notify team members by email
+    try {
+      const recipients = payment?.team?.members?.map((m) => m.email) ?? [];
+      // Ensure captain included
+      if (payment?.team?.captain?.email && !recipients.includes(payment.team.captain.email)) {
+        recipients.push(payment.team.captain.email);
+      }
+
+      const teamName = payment?.team?.name ?? "your team";
+
+      const subject =
+        status === "VERIFIED"
+          ? `Registration payment verified: ${teamName}`
+          : `Registration payment rejected: ${teamName}`;
+
+      const text =
+        status === "VERIFIED"
+          ? `Hello,\n\nYour payment for team '${teamName}' has been verified by the organizers. You can now submit your project repository.\n\nVerified by: ${user.email}\n\nRegards,\nZero_Day organizers`
+          : `Hello,\n\nYour payment submission for team '${teamName}' was rejected. Reason: ${rejectionReason}\n\nPlease resubmit your payment proof at /payment.\n\nRegards,\nZero_Day organizers`;
+
+      const html = text.replace(/\n/g, "<br />");
+
+      // Send to each recipient (best-effort)
+      await Promise.all(
+        recipients.map((to) => sendEmail({ to, subject, text, html }))
+      );
+    } catch (notifyErr) {
+      console.error("[Payment Verify Notify Error]", notifyErr);
+    }
 
     return NextResponse.json({
       id: updated.id,
