@@ -226,11 +226,21 @@ export function TeamDashboardShell({
 
         {hasTeam && team ? (
           <div className={`mt-7 rounded-xl border p-5 backdrop-blur-md ${
-              paymentStatus !== "VERIFIED"
-                ? "border-red-700 bg-red-900 text-red-50"
-                : "border-phosphor/40 bg-phosphor/10"
+              paymentStatus === "PENDING"
+                ? "border-terminal-amber/60 bg-terminal-amber/10 text-terminal-amber"
+                : paymentStatus && paymentStatus !== "VERIFIED"
+                  ? "border-red-700 bg-red-900 text-red-50"
+                  : "border-phosphor/40 bg-phosphor/10"
             }`}>
-            {paymentStatus !== "VERIFIED" ? (
+            {paymentStatus === "PENDING" ? (
+              <div className="mb-4 flex items-start gap-3 rounded-md border border-terminal-amber/60 bg-terminal-amber/10 p-3">
+                <Clock className="h-5 w-5 flex-shrink-0 text-terminal-amber" />
+                <div>
+                  <p className="text-sm font-semibold text-terminal-amber">Payment submitted</p>
+                  <p className="text-xs text-terminal-amber/90">Your payment is under verification. We&apos;ll update this once approved.</p>
+                </div>
+              </div>
+            ) : paymentStatus && paymentStatus !== "VERIFIED" ? (
               <div className="mb-4 flex items-start gap-3 rounded-md border border-red-700 bg-red-800/60 p-3">
                 <AlertTriangle className="h-5 w-5 flex-shrink-0 text-red-200" />
                 <div>
