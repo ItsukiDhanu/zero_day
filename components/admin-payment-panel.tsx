@@ -14,6 +14,7 @@ interface PendingPayment {
   paymentMethod: string;
   transactionReference: string;
   createdAt: string;
+  receiptFileName?: string | null;
   team: {
     id: string;
     name: string;
@@ -218,6 +219,16 @@ export function AdminPaymentPanel() {
                   <p className="text-xs text-gray-500 mt-1">
                     Submitted: {new Date(payment.createdAt).toLocaleString()}
                   </p>
+                  {payment.receiptFileName ? (
+                    <a
+                      href={`/api/payments/receipt/${payment.id}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="mt-2 inline-block text-xs font-semibold text-blue-600 hover:text-blue-700"
+                    >
+                      View receipt
+                    </a>
+                  ) : null}
                 </div>
 
                 <div className="flex gap-2">

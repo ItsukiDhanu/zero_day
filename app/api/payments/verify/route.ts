@@ -124,7 +124,12 @@ export async function GET(req: NextRequest) {
     // Get all pending payments with team details
     const payments = await prisma.teamPayment.findMany({
       where: { status: "PENDING" },
-      include: {
+      select: {
+        id: true,
+        paymentMethod: true,
+        transactionReference: true,
+        createdAt: true,
+        receiptFileName: true,
         team: {
           select: {
             id: true,

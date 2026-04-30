@@ -22,7 +22,6 @@ const QR_IMAGE_URL = `https://api.qrserver.com/v1/create-qr-code/?size=320x320&d
 export function TeamPaymentForm() {
   const [paymentStatus, setPaymentStatus] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [transactionId, setTransactionId] = useState("");
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
@@ -57,31 +56,13 @@ export function TeamPaymentForm() {
         return;
       }
 
-      setUploading(true);
-      const uploadBody = new FormData();
-      uploadBody.append("receiptFile", receiptFile);
-
-      const uploadRes = await fetch("/api/payments/upload", {
-        method: "POST",
-        body: uploadBody,
-      });
-
-      const uploadData = await uploadRes.json();
-
-      if (!uploadRes.ok || !uploadData.url) {
-        setError(uploadData.error || "Failed to upload receipt file");
-        return;
-      }
-
-      const uploadedReceiptUrl = String(uploadData.url);
+      const submitBody = new FormData();
+      submitBody.append("transactionId", transactionId);
+      submitBody.append("receiptFile", receiptFile);
 
       const res = await fetch("/api/payments/submit", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          transactionId,
-          receiptEvidence: uploadedReceiptUrl,
-        }),
+        body: submitBody,
       });
 
       const data = await res.json();
@@ -97,7 +78,6 @@ export function TeamPaymentForm() {
     } catch {
       setError("Network error - please try again");
     } finally {
-      setUploading(false);
       setLoading(false);
     }
   };
@@ -228,10 +208,10 @@ export function TeamPaymentForm() {
 
         <button
           type="submit"
-          disabled={loading || uploading || !transactionId.trim() || !receiptFile}
+          disabled={loading || !transactionId.trim() || !receiptFile}
           className="w-full rounded-lg border border-phosphor bg-phosphor px-4 py-2 text-sm font-semibold text-black transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-70"
         >
-          {uploading ? "Uploading receipt..." : loading ? "Submitting..." : "Submit Payment"}
+          {loading ? "Submitting..." : "Submit Payment"}
         </button>
       </form>
     </div>

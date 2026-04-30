@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
+const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024;
+const ALLOWED_MIME_TYPES = ["image/png", "image/jpeg", "image/jpg", "image/webp", "application/pdf"];
+
 export async function POST(req: NextRequest) {
   try {
     // Verify session
@@ -13,19 +16,32 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const body = await req.json();
-    const transactionId =
-      typeof body.transactionId === "string"
-        ? body.transactionId.trim()
-        : typeof body.transactionReference === "string"
-          ? body.transactionReference.trim()
-          : "";
-    const receiptEvidence =
-      typeof body.receiptEvidence === "string"
-        ? body.receiptEvidence.trim()
-        : typeof body.proofFileUrl === "string"
-          ? body.proofFileUrl.trim()
-          : "";
+    const contentType = req.headers.get("content-type") || "";
+    let transactionId = "";
+    let receiptEvidence = "";
+    let receiptFile: File | null = null;
+
+    if (contentType.includes("multipart/form-data")) {
+      const formData = await req.formData();
+      const transactionValue = formData.get("transactionId") || formData.get("transactionReference");
+      transactionId = typeof transactionValue === "string" ? transactionValue.trim() : "";
+      const fileValue = formData.get("receiptFile");
+      receiptFile = fileValue instanceof File ? fileValue : null;
+    } else {
+      const body = await req.json();
+      transactionId =
+        typeof body.transactionId === "string"
+          ? body.transactionId.trim()
+          : typeof body.transactionReference === "string"
+            ? body.transactionReference.trim()
+            : "";
+      receiptEvidence =
+        typeof body.receiptEvidence === "string"
+          ? body.receiptEvidence.trim()
+          : typeof body.proofFileUrl === "string"
+            ? body.proofFileUrl.trim()
+            : "";
+    }
 
     // Validate inputs
     if (!transactionId) {
@@ -35,14 +51,36 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    if (!receiptEvidence) {
+    if (!receiptFile && !receiptEvidence) {
       return NextResponse.json(
         { error: "Payment receipt or screenshot is required" },
         { status: 400 }
       );
     }
 
+    if (receiptFile) {
+      if (!ALLOWED_MIME_TYPES.includes(receiptFile.type)) {
+        return NextResponse.json(
+          { error: "Only PNG, JPG, WEBP, or PDF files are allowed" },
+          { status: 400 }
+        );
+      }
+
+      if (receiptFile.size > MAX_FILE_SIZE_BYTES) {
+        return NextResponse.json(
+          { error: "File too large. Max size is 5MB" },
+          { status: 400 }
+        );
+      }
+    }
+
     const paymentMethod = "UPI";
+
+    const receiptBuffer = receiptFile
+      ? Buffer.from(await receiptFile.arrayBuffer())
+      : null;
+    const receiptFileName = receiptFile ? receiptFile.name || "receipt" : null;
+    const receiptMimeType = receiptFile ? receiptFile.type || "application/octet-stream" : null;
 
     // Check if payment record already exists
     const existingPayment = await prisma.teamPayment.findUnique({
@@ -64,6 +102,9 @@ export async function POST(req: NextRequest) {
           paymentMethod,
           transactionReference: transactionId,
           proofFileUrl: receiptEvidence || null,
+          receiptFileName: receiptFileName || null,
+          receiptMimeType: receiptMimeType || null,
+          receiptData: receiptBuffer,
           status: "PENDING",
           rejectionReason: null,
           updatedAt: new Date(),
@@ -84,6 +125,9 @@ export async function POST(req: NextRequest) {
         paymentMethod,
         transactionReference: transactionId,
         proofFileUrl: receiptEvidence || null,
+        receiptFileName: receiptFileName || null,
+        receiptMimeType: receiptMimeType || null,
+        receiptData: receiptBuffer,
         status: "PENDING",
       },
     });
