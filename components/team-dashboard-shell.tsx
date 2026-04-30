@@ -1,6 +1,8 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useState, useEffect } from "react";
+import Link from "next/link";
+import { AlertCircle, CheckCircle, Clock } from "lucide-react";
 
 type SessionUser = {
   id: string;
@@ -54,6 +56,32 @@ export function TeamDashboardShell({
   const [teamActionView, setTeamActionView] = useState<"create" | "join" | null>(null);
   const [createMessage, setCreateMessage] = useState("");
   const [joinMessage, setJoinMessage] = useState("");
+  const [paymentStatus, setPaymentStatus] = useState<string | null>(null);
+  const [loadingPayment, setLoadingPayment] = useState(false);
+
+  useEffect(() => {
+    // Fetch payment status when team exists
+    if (team && initialTeam) {
+      fetchPaymentStatus();
+    }
+  }, [team, initialTeam]);
+
+  const fetchPaymentStatus = async () => {
+    setLoadingPayment(true);
+    try {
+      const res = await fetch("/api/payments/status");
+      if (res.status === 404) {
+        setPaymentStatus(null);
+        return;
+      }
+      const data = await res.json();
+      setPaymentStatus(data.status);
+    } catch {
+      console.error("Failed to fetch payment status");
+    } finally {
+      setLoadingPayment(false);
+    }
+  };
 
   const handleCreate = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -229,6 +257,39 @@ export function TeamDashboardShell({
                   </div>
                 ))}
               </div>
+            </div>
+
+            {/* Payment Status Section */}
+            <div className="mt-4 rounded-lg border border-white/10 bg-black/50 p-3">
+              <p className="text-xs uppercase tracking-[0.2em] text-neutral-400">Registration Payment</p>
+              {loadingPayment ? (
+                <div className="mt-3 text-sm text-neutral-300">Loading payment status...</div>
+              ) : paymentStatus === "VERIFIED" ? (
+                <div className="mt-3 flex items-center gap-2 rounded-md border border-green-500/30 bg-green-500/10 px-3 py-2">
+                  <CheckCircle className="h-4 w-4 text-green-500" />
+                  <span className="text-sm font-semibold text-green-400">Payment Verified</span>
+                </div>
+              ) : paymentStatus === "PENDING" ? (
+                <div className="mt-3 flex items-center gap-2 rounded-md border border-yellow-500/30 bg-yellow-500/10 px-3 py-2">
+                  <Clock className="h-4 w-4 text-yellow-500" />
+                  <span className="text-sm font-semibold text-yellow-400">Pending Verification</span>
+                </div>
+              ) : paymentStatus === "REJECTED" ? (
+                <div className="mt-3 flex items-center gap-2 rounded-md border border-red-500/30 bg-red-500/10 px-3 py-2">
+                  <AlertCircle className="h-4 w-4 text-red-500" />
+                  <span className="text-sm font-semibold text-red-400">Rejected - Resubmit</span>
+                </div>
+              ) : (
+                <div className="mt-3">
+                  <p className="text-sm text-neutral-300 mb-2">Complete payment to finalize registration</p>
+                  <Link
+                    href="/payment"
+                    className="inline-block rounded-lg border border-terminal-amber/80 bg-terminal-amber/10 px-3 py-2 text-sm font-semibold text-terminal-amber transition hover:bg-terminal-amber/20"
+                  >
+                    Complete Payment →
+                  </Link>
+                </div>
+              )}
             </div>
 
             {createMessage || joinMessage ? (

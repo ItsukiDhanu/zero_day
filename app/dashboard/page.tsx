@@ -131,6 +131,14 @@ export default async function DashboardPage() {
                   Judging
                 </Link>
               ) : null}
+              {user.team ? (
+                <Link
+                  href="/payment"
+                  className="rounded-md border border-white/15 bg-black/40 px-2.5 py-1 text-neutral-300 transition hover:border-terminal-amber/60 hover:text-terminal-amber"
+                >
+                  Payment
+                </Link>
+              ) : null}
               {user.role === "ADMIN" ? (
                 <Link
                   href="/admin"
