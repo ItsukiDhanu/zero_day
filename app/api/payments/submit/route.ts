@@ -75,6 +75,7 @@ export async function POST(req: NextRequest) {
     }
 
     const paymentMethod = "UPI";
+    const paymentPurpose = "REGISTRATION";
 
     const receiptBuffer = receiptFile
       ? Buffer.from(await receiptFile.arrayBuffer())
@@ -84,7 +85,12 @@ export async function POST(req: NextRequest) {
 
     // Check if payment record already exists
     const existingPayment = await prisma.teamPayment.findUnique({
-      where: { teamId: user.teamId },
+      where: {
+        teamId_paymentPurpose: {
+          teamId: user.teamId,
+          paymentPurpose,
+        },
+      },
     });
 
     if (existingPayment) {
@@ -100,6 +106,7 @@ export async function POST(req: NextRequest) {
         where: { id: existingPayment.id },
         data: {
           paymentMethod,
+          paymentPurpose,
           transactionReference: transactionId,
           proofFileUrl: receiptEvidence || null,
           receiptFileName: receiptFileName || null,
@@ -123,6 +130,7 @@ export async function POST(req: NextRequest) {
       data: {
         teamId: user.teamId,
         paymentMethod,
+        paymentPurpose,
         transactionReference: transactionId,
         proofFileUrl: receiptEvidence || null,
         receiptFileName: receiptFileName || null,

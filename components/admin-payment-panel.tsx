@@ -12,6 +12,7 @@ import {
 interface PendingPayment {
   id: string;
   paymentMethod: string;
+  paymentPurpose?: "REGISTRATION" | "EXTRA_SLOT";
   transactionReference: string;
   createdAt: string;
   receiptFileName?: string | null;
@@ -208,7 +209,7 @@ export function AdminPaymentPanel() {
                     </p>
                   </div>
                   <span className="inline-block px-3 py-1 bg-yellow-100 text-yellow-800 text-xs font-medium rounded-full">
-                    {payment.paymentMethod}
+                    {payment.paymentPurpose === "EXTRA_SLOT" ? "Extra Slot" : "Registration"}
                   </span>
                 </div>
 

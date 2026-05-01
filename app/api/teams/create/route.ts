@@ -22,6 +22,7 @@ type TeamResponse = {
   name: string;
   joinCode: string;
   memberCount: number;
+  extraSlotUnlocked: boolean;
   members: TeamMemberResponse[];
 };
 
@@ -118,6 +119,7 @@ export async function POST(request: NextRequest) {
             name: createdTeam.name,
             joinCode: createdTeam.joinCode,
             memberCount: 1,
+            extraSlotUnlocked: false,
             members: [
               {
                 id: freshUser.id,

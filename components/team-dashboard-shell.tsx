@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useState, useEffect } from "react";
+import { FormEvent, useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AlertCircle, CheckCircle, Clock, AlertTriangle } from "lucide-react";
@@ -21,6 +21,7 @@ type TeamState = {
   name: string;
   joinCode: string;
   memberCount: number;
+  extraSlotUnlocked: boolean;
   members: Array<{
     id: string;
     name: string | null;
@@ -59,16 +60,15 @@ export function TeamDashboardShell({
   const [createMessage, setCreateMessage] = useState("");
   const [joinMessage, setJoinMessage] = useState("");
   const [paymentStatus, setPaymentStatus] = useState<string | null>(null);
+  const [extraSlotStatus, setExtraSlotStatus] = useState<string | null>(null);
+  const [extraSlotLoading, setExtraSlotLoading] = useState(false);
+  const [extraSlotSubmitting, setExtraSlotSubmitting] = useState(false);
+  const [extraSlotError, setExtraSlotError] = useState("");
+  const [extraSlotTransactionId, setExtraSlotTransactionId] = useState("");
+  const [extraSlotReceipt, setExtraSlotReceipt] = useState<File | null>(null);
   const [loadingPayment, setLoadingPayment] = useState(false);
 
-  useEffect(() => {
-    // Fetch payment status when team exists
-    if (team && initialTeam) {
-      fetchPaymentStatus();
-    }
-  }, [team, initialTeam]);
-
-  const fetchPaymentStatus = async () => {
+  const fetchPaymentStatus = useCallback(async () => {
     setLoadingPayment(true);
     try {
       const res = await fetch("/api/payments/status");
@@ -82,6 +82,69 @@ export function TeamDashboardShell({
       console.error("Failed to fetch payment status");
     } finally {
       setLoadingPayment(false);
+    }
+  }, []);
+
+  const fetchExtraSlotStatus = useCallback(async () => {
+    if (!team) return;
+    setExtraSlotLoading(true);
+    try {
+      const res = await fetch("/api/payments/extra-slot/status");
+      if (res.status === 404) {
+        setExtraSlotStatus(null);
+        return;
+      }
+      const data = await res.json();
+      setExtraSlotStatus(data.status);
+    } catch {
+      console.error("Failed to fetch extra slot status");
+    } finally {
+      setExtraSlotLoading(false);
+    }
+  }, [team]);
+
+  useEffect(() => {
+    // Fetch payment status when team exists
+    if (team && initialTeam) {
+      fetchPaymentStatus();
+      fetchExtraSlotStatus();
+    }
+  }, [team, initialTeam, fetchPaymentStatus, fetchExtraSlotStatus]);
+
+  const handleExtraSlotSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setExtraSlotSubmitting(true);
+    setExtraSlotError("");
+
+    try {
+      if (!extraSlotReceipt) {
+        setExtraSlotError("Receipt or screenshot is required to unlock the 5th slot.");
+        return;
+      }
+
+      const submitBody = new FormData();
+      submitBody.append("transactionId", extraSlotTransactionId);
+      submitBody.append("receiptFile", extraSlotReceipt);
+
+      const res = await fetch("/api/payments/extra-slot/submit", {
+        method: "POST",
+        body: submitBody,
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setExtraSlotError(data.error || "Failed to submit extra slot payment");
+        return;
+      }
+
+      setExtraSlotStatus(data.status);
+      setExtraSlotTransactionId("");
+      setExtraSlotReceipt(null);
+    } catch {
+      setExtraSlotError("Network error - please try again");
+    } finally {
+      setExtraSlotSubmitting(false);
     }
   };
 
@@ -200,7 +263,8 @@ export function TeamDashboardShell({
   };
 
   const hasTeam = Boolean(team);
-  const slotCount = team ? 4 - team.memberCount : 4;
+  const memberLimit = team?.extraSlotUnlocked ? 5 : 4;
+  const slotCount = team ? memberLimit - team.memberCount : 4;
 
   return (
     <section id="teams" className="mx-auto mt-10 w-full max-w-5xl scroll-mt-20 pb-12">
@@ -260,7 +324,7 @@ export function TeamDashboardShell({
 
               <div className="rounded-lg border border-white/10 bg-black/50 p-3">
                 <p className="text-xs uppercase tracking-[0.2em] text-neutral-400">Capacity</p>
-                <p className="mt-2 text-lg font-semibold text-neutral-100">{team.memberCount}/4 members</p>
+                <p className="mt-2 text-lg font-semibold text-neutral-100">{team.memberCount}/{memberLimit} members</p>
                 <p className={`mt-1 text-sm ${slotCount <= 1 ? "text-terminal-amber" : "text-phosphor"}`}>
                   {slotCount} slot{slotCount === 1 ? "" : "s"} remaining
                 </p>
@@ -285,6 +349,73 @@ export function TeamDashboardShell({
                 ))}
               </div>
             </div>
+
+            {!team.extraSlotUnlocked && extraSlotStatus !== "VERIFIED" && team.memberCount >= 4 ? (
+              <div className="mt-4 rounded-lg border border-white/10 bg-black/50 p-4">
+                <p className="text-xs uppercase tracking-[0.2em] text-neutral-400">Unlock 5th Slot</p>
+                <p className="mt-2 text-sm text-neutral-300">
+                  Your team is full. Pay Rs 50 to unlock an additional member slot.
+                </p>
+                <p className="mt-2 text-xs text-neutral-400">
+                  Send Rs 50 to 9606726468@axl with note &quot;Zero Day extra slot&quot; and upload the receipt.
+                </p>
+
+                {extraSlotLoading ? (
+                  <div className="mt-3 text-sm text-neutral-300">Loading extra slot status...</div>
+                ) : extraSlotStatus === "VERIFIED" ? (
+                  <div className="mt-3 flex items-center gap-2 rounded-md border border-green-500/30 bg-green-500/10 px-3 py-2">
+                    <CheckCircle className="h-4 w-4 text-green-500" />
+                    <span className="text-sm font-semibold text-green-400">Extra slot unlocked</span>
+                  </div>
+                ) : extraSlotStatus === "PENDING" ? (
+                  <div className="mt-3 flex items-center gap-2 rounded-md border border-yellow-500/30 bg-yellow-500/10 px-3 py-2">
+                    <Clock className="h-4 w-4 text-yellow-500" />
+                    <span className="text-sm font-semibold text-yellow-400">Extra slot payment pending</span>
+                  </div>
+                ) : extraSlotStatus === "REJECTED" ? (
+                  <div className="mt-3 flex items-center gap-2 rounded-md border border-red-500/30 bg-red-500/10 px-3 py-2">
+                    <AlertCircle className="h-4 w-4 text-red-500" />
+                    <span className="text-sm font-semibold text-red-400">Rejected - resubmit</span>
+                  </div>
+                ) : null}
+
+                {extraSlotStatus !== "VERIFIED" ? (
+                  <form onSubmit={handleExtraSlotSubmit} className="mt-4 space-y-3">
+                    {extraSlotError ? (
+                      <p className="text-sm text-red-300">{extraSlotError}</p>
+                    ) : null}
+                    <div>
+                      <label className="block text-sm font-medium text-neutral-200 mb-2">Transaction ID *</label>
+                      <input
+                        type="text"
+                        value={extraSlotTransactionId}
+                        onChange={(e) => setExtraSlotTransactionId(e.target.value)}
+                        placeholder="Enter UPI transaction ID"
+                        required
+                        className="w-full rounded-lg border border-white/10 bg-black/60 px-3 py-2 text-neutral-100 outline-none transition focus:border-phosphor focus:ring-2 focus:ring-phosphor/30"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-neutral-200 mb-2">Payment Receipt or Screenshot *</label>
+                      <input
+                        type="file"
+                        accept="image/png,image/jpeg,image/jpg,image/webp,application/pdf"
+                        onChange={(e) => setExtraSlotReceipt(e.target.files?.[0] ?? null)}
+                        required
+                        className="w-full rounded-lg border border-white/10 bg-black/60 px-3 py-2 text-neutral-100 outline-none transition focus:border-phosphor focus:ring-2 focus:ring-phosphor/30"
+                      />
+                    </div>
+                    <button
+                      type="submit"
+                      disabled={extraSlotSubmitting || !extraSlotTransactionId.trim() || !extraSlotReceipt}
+                      className="rounded-lg border border-terminal-amber/80 bg-terminal-amber/10 px-4 py-2 text-sm font-semibold text-terminal-amber transition hover:bg-terminal-amber/20 disabled:cursor-not-allowed disabled:opacity-70"
+                    >
+                      {extraSlotSubmitting ? "Submitting..." : "Pay Rs 50 to unlock"}
+                    </button>
+                  </form>
+                ) : null}
+              </div>
+            ) : null}
 
             {/* Payment Status Section */}
             <div className="mt-4 rounded-lg border border-white/10 bg-black/50 p-3">

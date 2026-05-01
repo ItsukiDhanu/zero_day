@@ -26,6 +26,11 @@ enum PaymentStatus {
   REJECTED
 }
 
+enum PaymentPurpose {
+  REGISTRATION
+  EXTRA_SLOT
+}
+
 model User {
   id          String   @id @default(uuid()) @db.Uuid
   email       String   @unique
@@ -59,7 +64,8 @@ model Team {
   repositoryUrl String? @map("repository_url")
   members   User[] @relation("TeamMembership")
   judgingScore TeamJudgingScore?
-  payment   TeamPayment?
+  payments  TeamPayment[]
+  extraSlotUnlocked Boolean @default(false) @map("extra_slot_unlocked")
 
   captainId String? @map("captain_id") @db.Uuid
   captain   User?   @relation("TeamCaptain", fields: [captainId], references: [id], onDelete: SetNull)
@@ -93,8 +99,9 @@ model TeamJudgingScore {
 
 model TeamPayment {
   id                    String   @id @default(uuid()) @db.Uuid
-  teamId                String   @unique @map("team_id") @db.Uuid
+  teamId                String   @map("team_id") @db.Uuid
   status                PaymentStatus @default(PENDING)
+  paymentPurpose        PaymentPurpose @default(REGISTRATION) @map("payment_purpose")
   paymentMethod         String   @map("payment_method")
   transactionReference  String   @map("transaction_reference")
   proofFileUrl          String?  @map("proof_file_url")
@@ -111,6 +118,7 @@ model TeamPayment {
 
   @@index([status])
   @@index([createdAt])
+  @@unique([teamId, paymentPurpose])
 }
 
 model SiteSettings {

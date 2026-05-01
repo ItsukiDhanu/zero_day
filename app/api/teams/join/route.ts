@@ -63,6 +63,7 @@ type TeamResponse = {
   name: string;
   joinCode: string;
   memberCount: number;
+  extraSlotUnlocked: boolean;
   members: Array<{
     id: string;
     name: string | null;
@@ -76,6 +77,7 @@ function mapTeamResponse(team: {
   name: string;
   joinCode: string;
   captainId: string | null;
+  extraSlotUnlocked: boolean;
   _count: { members: number };
   members: Array<{ id: string; name: string | null; email: string }>;
 }): TeamResponse {
@@ -84,6 +86,7 @@ function mapTeamResponse(team: {
     name: team.name,
     joinCode: team.joinCode,
     memberCount: team._count.members,
+    extraSlotUnlocked: team.extraSlotUnlocked,
     members: team.members.map((member) => ({
       id: member.id,
       name: member.name,
@@ -134,7 +137,7 @@ export async function POST(request: NextRequest) {
 
       const team = await tx.team.findUnique({
         where: { joinCode: payload.joinCode },
-        select: { id: true, name: true, joinCode: true },
+        select: { id: true, name: true, joinCode: true, extraSlotUnlocked: true },
       });
 
       if (!team) {
@@ -157,8 +160,10 @@ export async function POST(request: NextRequest) {
 
       const currentMemberCount = await tx.user.count({ where: { teamId: team.id } });
 
-      if (!freshUser.teamId && currentMemberCount >= 4) {
-        throw new ApiError(409, "Team is at max capacity (4/4).");
+      const memberLimit = team.extraSlotUnlocked ? 5 : 4;
+
+      if (!freshUser.teamId && currentMemberCount >= memberLimit) {
+        throw new ApiError(409, `Team is at max capacity (${memberLimit}/${memberLimit}).`);
       }
 
       if (!freshUser.teamId) {
@@ -175,6 +180,7 @@ export async function POST(request: NextRequest) {
           name: true,
           joinCode: true,
           captainId: true,
+          extraSlotUnlocked: true,
           _count: {
             select: {
               members: true,
@@ -182,7 +188,7 @@ export async function POST(request: NextRequest) {
           },
           members: {
             orderBy: { createdAt: "asc" },
-            take: 4,
+            take: team.extraSlotUnlocked ? 5 : 4,
             select: {
               id: true,
               name: true,

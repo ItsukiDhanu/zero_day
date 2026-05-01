@@ -12,6 +12,7 @@ export async function getConfirmedTeamCounts(): Promise<ConfirmedTeamCount[]> {
     INNER JOIN "TeamPayment" tp
       ON tp."team_id" = u."teamId"
       AND tp."status" = 'VERIFIED'
+      AND tp."payment_purpose" = 'REGISTRATION'
     WHERE u."teamId" IS NOT NULL
     GROUP BY u."teamId"
     HAVING COUNT(*) BETWEEN 2 AND 4

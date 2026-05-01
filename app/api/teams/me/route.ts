@@ -28,6 +28,7 @@ export async function GET(request: NextRequest) {
             name: true,
             joinCode: true,
             captainId: true,
+            extraSlotUnlocked: true,
             _count: {
               select: {
                 members: true,
@@ -35,7 +36,7 @@ export async function GET(request: NextRequest) {
             },
             members: {
               orderBy: { createdAt: "asc" },
-              take: 4,
+              take: 5,
               select: {
                 id: true,
                 name: true,
@@ -71,6 +72,7 @@ export async function GET(request: NextRequest) {
               name: hydratedUser.team.name,
               joinCode: hydratedUser.team.joinCode,
               memberCount: hydratedUser.team._count.members,
+              extraSlotUnlocked: hydratedUser.team.extraSlotUnlocked,
               members: hydratedUser.team.members.map((member) => ({
                 id: member.id,
                 name: member.name,

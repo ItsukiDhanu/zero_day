@@ -13,6 +13,7 @@ function mapTeamState(team: {
   name: string;
   joinCode: string;
   captainId: string | null;
+  extraSlotUnlocked: boolean;
   _count: { members: number };
   members: Array<{ id: string; name: string | null; email: string }>;
 }) {
@@ -23,6 +24,7 @@ function mapTeamState(team: {
     name: team.name,
     joinCode: team.joinCode,
     memberCount: team._count.members,
+    extraSlotUnlocked: team.extraSlotUnlocked,
     members: team.members.map((member) => ({
       id: member.id,
       name: member.name,
@@ -59,6 +61,7 @@ export default async function TeamsPage() {
             name: true,
             joinCode: true,
             captainId: true,
+            extraSlotUnlocked: true,
             _count: {
               select: {
                 members: true,
@@ -66,7 +69,7 @@ export default async function TeamsPage() {
             },
             members: {
               orderBy: { createdAt: "asc" },
-              take: 4,
+              take: 5,
               select: {
                 id: true,
                 name: true,

@@ -65,6 +65,13 @@ export async function PATCH(req: NextRequest) {
       },
     });
 
+    if (status === "VERIFIED" && payment.paymentPurpose === "EXTRA_SLOT") {
+      await prisma.team.update({
+        where: { id: payment.teamId },
+        data: { extraSlotUnlocked: true },
+      });
+    }
+
     // Notify team members by email
     try {
       const recipients = payment?.team?.members?.map((m) => m.email) ?? [];
@@ -75,15 +82,16 @@ export async function PATCH(req: NextRequest) {
 
       const teamName = payment?.team?.name ?? "your team";
 
+      const paymentLabel = payment.paymentPurpose === "EXTRA_SLOT" ? "extra slot" : "registration";
       const subject =
         status === "VERIFIED"
-          ? `Registration payment verified: ${teamName}`
-          : `Registration payment rejected: ${teamName}`;
+          ? `${paymentLabel} payment verified: ${teamName}`
+          : `${paymentLabel} payment rejected: ${teamName}`;
 
       const text =
         status === "VERIFIED"
-          ? `Hello,\n\nYour payment for team '${teamName}' has been verified by the organizers. You can now submit your project repository.\n\nVerified by: ${user.email}\n\nRegards,\nZero_Day organizers`
-          : `Hello,\n\nYour payment submission for team '${teamName}' was rejected. Reason: ${rejectionReason}\n\nPlease resubmit your payment proof at /payment.\n\nRegards,\nZero_Day organizers`;
+          ? `Hello,\n\nYour ${paymentLabel} payment for team '${teamName}' has been verified by the organizers.\n\nVerified by: ${user.email}\n\nRegards,\nZero_Day organizers`
+          : `Hello,\n\nYour ${paymentLabel} payment submission for team '${teamName}' was rejected. Reason: ${rejectionReason}\n\nPlease resubmit your payment proof at /payment.\n\nRegards,\nZero_Day organizers`;
 
       const html = text.replace(/\n/g, "<br />");
 
@@ -127,6 +135,7 @@ export async function GET(req: NextRequest) {
       select: {
         id: true,
         paymentMethod: true,
+        paymentPurpose: true,
         transactionReference: true,
         createdAt: true,
         receiptFileName: true,

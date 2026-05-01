@@ -133,7 +133,12 @@ export function isAdminRole(role: UserRole) {
 
 export async function isTeamPaymentVerified(teamId: string): Promise<boolean> {
   const payment = await prisma.teamPayment.findUnique({
-    where: { teamId },
+    where: {
+      teamId_paymentPurpose: {
+        teamId,
+        paymentPurpose: "REGISTRATION",
+      },
+    },
     select: { status: true },
   });
   return payment?.status === "VERIFIED";
