@@ -90,6 +90,7 @@ export async function POST(request: NextRequest) {
       select: {
         id: true,
         captainId: true,
+        extraSlotUnlocked: true,
         _count: {
           select: {
             members: true,
@@ -110,8 +111,9 @@ export async function POST(request: NextRequest) {
     }
 
     const memberCount = team._count.members;
-    if (memberCount < 2 || memberCount > 4) {
-      throw new ApiError(409, "Repository link can be submitted only for confirmed teams (2-4 members).");
+    const maxMembers = team.extraSlotUnlocked ? 5 : 4;
+    if (memberCount < 2 || memberCount > maxMembers) {
+      throw new ApiError(409, `Repository link can be submitted only for confirmed teams (2-${maxMembers} members).`);
     }
 
     const captainId = team.captainId ?? team.members[0]?.id ?? null;

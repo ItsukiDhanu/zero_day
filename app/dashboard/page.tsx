@@ -47,6 +47,7 @@ export default async function DashboardPage() {
             name: true,
             joinCode: true,
             captainId: true,
+            extraSlotUnlocked: true,
             _count: {
               select: {
                 members: true,
@@ -54,7 +55,7 @@ export default async function DashboardPage() {
             },
             members: {
               orderBy: { createdAt: "asc" },
-              take: 4,
+              take: 5,
               select: {
                 id: true,
                 name: true,
@@ -75,6 +76,7 @@ export default async function DashboardPage() {
   const team = user.team;
   const captainId = team ? team.captainId ?? team.members[0]?.id ?? null : null;
   const isCaptain = captainId === user.id;
+  const teamLimit = team?.extraSlotUnlocked ? 5 : 4;
 
   return (
     <main className="relative min-h-screen overflow-hidden bg-neutral-950 pb-12 text-neutral-100">
@@ -210,7 +212,7 @@ export default async function DashboardPage() {
                 </div>
                 <div className="rounded-lg border border-white/10 bg-black/60 px-3 py-2">
                   <p className="text-xs uppercase tracking-[0.18em] text-neutral-400">Team Capacity</p>
-                  <p className="mt-1 text-neutral-100">{team._count.members}/4 members</p>
+                  <p className="mt-1 text-neutral-100">{team._count.members}/{teamLimit} members</p>
                 </div>
                 <div className="rounded-lg border border-white/10 bg-black/60 px-3 py-2">
                   <p className="text-xs uppercase tracking-[0.18em] text-neutral-400">Members</p>

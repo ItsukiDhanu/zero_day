@@ -47,7 +47,7 @@ const faqs = [
   {
     question: "Where can I see eligible teams?",
     answer:
-      "Use the Confirmed Teams page to view teams that have between 2 and 4 registered members.",
+      "Use the Confirmed Teams page to view teams that have between 2 and 5 registered members (5th slot unlocked if needed).",
   },
 ] as const;
 

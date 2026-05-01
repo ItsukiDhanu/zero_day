@@ -114,7 +114,7 @@ export default async function HomePage() {
             <p className="text-xs uppercase tracking-[0.2em] text-phosphor/90">Public Roster</p>
             <h2 className="mt-3 text-xl font-semibold text-neutral-100">View Confirmed Teams</h2>
             <p className="mt-3 text-sm text-neutral-300">
-              Public list of teams with 2 to 4 members, including participant names.
+              Public list of teams with 2 to 5 members (5th slot unlocked if needed), including participant names.
             </p>
           </Link>
 

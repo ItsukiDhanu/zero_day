@@ -15,7 +15,7 @@ const rules = [
   {
     title: "Team Structure",
     points: [
-      "Teams must have at least 2 and at most 4 members.",
+      "Teams must have at least 2 and at most 4 members (5th slot available after extra-slot payment unlock).",
       "A participant can belong to only one team at a time.",
       "Team join code is private and should only be shared with intended members.",
     ],
