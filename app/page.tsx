@@ -1,4 +1,3 @@
-import { CommandPalette } from "@/components/command-palette";
 import { HeroSection } from "@/components/hero-section";
 import { cookies } from "next/headers";
 import Link from "next/link";
@@ -16,8 +15,6 @@ export default async function HomePage() {
         <div className="absolute bottom-0 right-0 h-80 w-80 rounded-full bg-terminal-amber/10 blur-3xl" />
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_0%,rgba(255,255,255,0.08),transparent_45%)]" />
       </div>
-
-      <CommandPalette isAuthenticated={isAuthenticated} />
 
       <div className="relative z-10 mx-auto w-full max-w-6xl px-4 pt-6 sm:px-6 lg:px-8">
         <header className="rounded-xl border border-white/10 bg-black/40 px-4 py-3 backdrop-blur-md">

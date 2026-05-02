@@ -1,4 +1,5 @@
 import { Prisma } from "@prisma/client";
+import { revalidateTag } from "next/cache";
 import { NextRequest, NextResponse } from "next/server";
 import { ApiError, isApiError } from "@/lib/api-error";
 import { getSessionUser } from "@/lib/auth";
@@ -133,6 +134,8 @@ export async function POST(request: NextRequest) {
             ],
           } satisfies TeamResponse;
         });
+
+        revalidateTag("confirmed-teams");
 
         return NextResponse.json({
           team,

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import { ApiError, isApiError } from "@/lib/api-error";
 import { getSessionIdentity } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
@@ -207,6 +208,8 @@ export async function POST(request: NextRequest) {
         alreadyMember: Boolean(freshUser.teamId),
       };
     });
+
+    revalidateTag("confirmed-teams");
 
     return NextResponse.json({
       team: mapTeamResponse(joined.team),

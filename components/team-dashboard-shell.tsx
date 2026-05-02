@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useState, useEffect, useCallback } from "react";
+import { FormEvent, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AlertCircle, CheckCircle, Clock, AlertTriangle, Copy } from "lucide-react";
@@ -41,12 +41,16 @@ type TeamDashboardShellProps = {
   initialUser: SessionUser;
   initialTeam: TeamState | null;
   initialRegistrationOpen: boolean;
+  initialPaymentStatus: string | null;
+  initialExtraSlotStatus: string | null;
 };
 
 export function TeamDashboardShell({
   initialUser,
   initialTeam,
   initialRegistrationOpen,
+  initialPaymentStatus,
+  initialExtraSlotStatus,
 }: TeamDashboardShellProps) {
   const router = useRouter();
   const [teamName, setTeamName] = useState("");
@@ -60,54 +64,9 @@ export function TeamDashboardShell({
   const [teamActionView, setTeamActionView] = useState<"create" | "join" | null>(null);
   const [createMessage, setCreateMessage] = useState("");
   const [joinMessage, setJoinMessage] = useState("");
-  const [paymentStatus, setPaymentStatus] = useState<string | null>(null);
-  const [extraSlotStatus, setExtraSlotStatus] = useState<string | null>(null);
-  const [extraSlotLoading, setExtraSlotLoading] = useState(false);
-  const [loadingPayment, setLoadingPayment] = useState(false);
+  const [paymentStatus] = useState<string | null>(initialPaymentStatus);
+  const [extraSlotStatus] = useState<string | null>(initialExtraSlotStatus);
   const [copiedLink, setCopiedLink] = useState<"link" | "code" | null>(null);
-
-  const fetchPaymentStatus = useCallback(async () => {
-    setLoadingPayment(true);
-    try {
-      const res = await fetch("/api/payments/status");
-      if (res.status === 404) {
-        setPaymentStatus(null);
-        return;
-      }
-      const data = await res.json();
-      setPaymentStatus(data.status);
-    } catch {
-      console.error("Failed to fetch payment status");
-    } finally {
-      setLoadingPayment(false);
-    }
-  }, []);
-
-  const fetchExtraSlotStatus = useCallback(async () => {
-    if (!team) return;
-    setExtraSlotLoading(true);
-    try {
-      const res = await fetch("/api/payments/extra-slot/status");
-      if (res.status === 404) {
-        setExtraSlotStatus(null);
-        return;
-      }
-      const data = await res.json();
-      setExtraSlotStatus(data.status);
-    } catch {
-      console.error("Failed to fetch extra slot status");
-    } finally {
-      setExtraSlotLoading(false);
-    }
-  }, [team]);
-
-  useEffect(() => {
-    // Fetch payment status when team exists
-    if (team && initialTeam) {
-      fetchPaymentStatus();
-      fetchExtraSlotStatus();
-    }
-  }, [team, initialTeam, fetchPaymentStatus, fetchExtraSlotStatus]);
 
 
   const handleCreate = async (event: FormEvent<HTMLFormElement>) => {
@@ -361,9 +320,7 @@ export function TeamDashboardShell({
                   Complete the extra slot payment to unlock the 5th member slot.
                 </p>
 
-                {extraSlotLoading ? (
-                  <div className="mt-3 text-sm text-neutral-300">Loading extra slot status...</div>
-                ) : extraSlotStatus === "PENDING" ? (
+                {extraSlotStatus === "PENDING" ? (
                   <div className="mt-3 flex items-center gap-2 rounded-md border border-yellow-500/30 bg-yellow-500/10 px-3 py-2">
                     <Clock className="h-4 w-4 text-yellow-500" />
                     <span className="text-sm font-semibold text-yellow-400">Extra slot payment pending</span>
@@ -389,9 +346,7 @@ export function TeamDashboardShell({
             {/* Payment Status Section */}
             <div className="mt-4 rounded-lg border border-white/10 bg-black/50 p-3">
               <p className="text-xs uppercase tracking-[0.2em] text-neutral-400">Registration Payment</p>
-              {loadingPayment ? (
-                <div className="mt-3 text-sm text-neutral-300">Loading payment status...</div>
-              ) : paymentStatus === "VERIFIED" ? (
+              {paymentStatus === "VERIFIED" ? (
                 <div className="mt-3 flex items-center gap-2 rounded-md border border-green-500/30 bg-green-500/10 px-3 py-2">
                   <CheckCircle className="h-4 w-4 text-green-500" />
                   <span className="text-sm font-semibold text-green-400">Payment Verified</span>

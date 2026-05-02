@@ -1,12 +1,18 @@
-import { NextRequest, NextResponse } from "next/server";
+"use server";
+
 import { revalidateTag } from "next/cache";
+import { cookies } from "next/headers";
+import { Prisma } from "@prisma/client";
 import { ApiError, isApiError } from "@/lib/api-error";
-import { getSessionUser, isTeamPaymentVerified } from "@/lib/auth";
+import { decodeSessionToken } from "@/lib/session";
+import { isTeamPaymentVerified } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getOrCreateSiteSettings } from "@/lib/site-settings";
 
-type TeamRepositoryPayload = {
-  repositoryUrl?: unknown;
+type RepositorySubmissionState = {
+  message?: string;
+  error?: string;
+  repositoryUrl?: string | null;
 };
 
 const VALID_GITHUB_HOSTS = new Set(["github.com", "www.github.com"]);
@@ -49,8 +55,9 @@ function normalizeGithubRepositoryUrl(rawValue: string) {
   return `https://github.com/${owner}/${repositoryName}`;
 }
 
-function parsePayload(payload: TeamRepositoryPayload) {
-  const repositoryUrl = typeof payload.repositoryUrl === "string" ? payload.repositoryUrl.trim() : "";
+function parsePayload(formData: FormData) {
+  const rawValue = formData.get("repositoryUrl");
+  const repositoryUrl = typeof rawValue === "string" ? rawValue.trim() : "";
 
   if (!repositoryUrl) {
     throw new ApiError(400, "GitHub repository link is required.");
@@ -61,9 +68,26 @@ function parsePayload(payload: TeamRepositoryPayload) {
   };
 }
 
-export async function POST(request: NextRequest) {
+export async function submitTeamRepositoryAction(
+  _previousState: RepositorySubmissionState,
+  formData: FormData,
+): Promise<RepositorySubmissionState> {
   try {
-    const user = await getSessionUser(request);
+    const sessionCookieStore = await cookies();
+    const sessionToken = sessionCookieStore.get("zd_session")?.value;
+    const userId = decodeSessionToken(sessionToken);
+
+    if (!userId) {
+      throw new ApiError(401, "No active session.");
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        teamId: true,
+      },
+    });
 
     if (!user) {
       throw new ApiError(401, "No active session.");
@@ -78,13 +102,12 @@ export async function POST(request: NextRequest) {
       throw new ApiError(403, "Repository submission is currently closed by organizers.");
     }
 
-    // Check if team has verified payment
     const paymentVerified = await isTeamPaymentVerified(user.teamId);
     if (!paymentVerified) {
       throw new ApiError(402, "Team registration payment must be verified before submitting repository.");
     }
 
-    const payload = parsePayload((await request.json()) as TeamRepositoryPayload);
+    const payload = parsePayload(formData);
 
     const team = await prisma.team.findUnique({
       where: { id: user.teamId },
@@ -113,6 +136,7 @@ export async function POST(request: NextRequest) {
 
     const memberCount = team._count.members;
     const maxMembers = team.extraSlotUnlocked ? 5 : 4;
+
     if (memberCount < 2 || memberCount > maxMembers) {
       throw new ApiError(409, `Repository link can be submitted only for confirmed teams (2-${maxMembers} members).`);
     }
@@ -132,15 +156,19 @@ export async function POST(request: NextRequest) {
 
     revalidateTag("confirmed-teams");
 
-    return NextResponse.json({
+    return {
       repositoryUrl: updatedTeam.repositoryUrl,
       message: "Repository link submitted successfully.",
-    });
+    };
   } catch (error) {
     if (isApiError(error)) {
-      return NextResponse.json({ error: error.message }, { status: error.status });
+      return { error: error.message };
     }
 
-    return NextResponse.json({ error: "Unexpected repository submission failure." }, { status: 500 });
+    if (error instanceof Prisma.PrismaClientKnownRequestError) {
+      return { error: "Repository submission failed due to a database error." };
+    }
+
+    return { error: "Unexpected repository submission failure." };
   }
 }

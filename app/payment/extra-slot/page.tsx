@@ -1,7 +1,6 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { CommandPalette } from "@/components/command-palette";
 import { ExtraSlotPaymentForm } from "@/components/extra-slot-payment-form";
 import { decodeSessionToken } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
@@ -52,8 +51,6 @@ export default async function ExtraSlotPaymentPage() {
         <div className="absolute bottom-0 right-0 h-80 w-80 rounded-full bg-terminal-amber/10 blur-3xl" />
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_0%,rgba(255,255,255,0.08),transparent_45%)]" />
       </div>
-
-      <CommandPalette isAuthenticated />
 
       <div className="relative z-10 mx-auto w-full max-w-3xl px-4 pt-6 sm:px-6 lg:px-8">
         <header className="rounded-xl border border-white/10 bg-black/40 px-4 py-3 backdrop-blur-md mb-6">

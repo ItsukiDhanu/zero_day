@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { CommandPalette } from "@/components/command-palette";
 import { TeamDashboardShell } from "@/components/team-dashboard-shell";
 import { canAccessJudging } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
@@ -90,9 +89,33 @@ export default async function TeamsPage() {
     redirect("/register");
   }
 
-  const isAuthenticated = true;
+  const [registrationPayment, extraSlotPayment] = user.teamId
+    ? await Promise.all([
+        prisma.teamPayment.findUnique({
+          where: {
+            teamId_paymentPurpose: {
+              teamId: user.teamId,
+              paymentPurpose: "REGISTRATION",
+            },
+          },
+          select: { status: true },
+        }),
+        prisma.teamPayment.findUnique({
+          where: {
+            teamId_paymentPurpose: {
+              teamId: user.teamId,
+              paymentPurpose: "EXTRA_SLOT",
+            },
+          },
+          select: { status: true },
+        }),
+      ])
+    : [null, null];
+
   const initialTeam = user.team ? mapTeamState(user.team) : null;
   const initialRegistrationOpen = settings.registrationOpen;
+  const initialPaymentStatus = registrationPayment?.status ?? null;
+  const initialExtraSlotStatus = extraSlotPayment?.status ?? null;
 
   return (
     <main className="relative min-h-screen overflow-hidden bg-neutral-950 pb-12 text-neutral-100">
@@ -101,8 +124,6 @@ export default async function TeamsPage() {
         <div className="absolute bottom-0 right-0 h-80 w-80 rounded-full bg-terminal-amber/10 blur-3xl" />
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_0%,rgba(255,255,255,0.08),transparent_45%)]" />
       </div>
-
-      <CommandPalette isAuthenticated={isAuthenticated} />
 
       <div className="relative z-10 mx-auto w-full max-w-6xl px-4 pt-6 sm:px-6 lg:px-8">
         <header className="rounded-xl border border-white/10 bg-black/40 px-4 py-3 backdrop-blur-md">
@@ -182,6 +203,8 @@ export default async function TeamsPage() {
           }}
           initialTeam={initialTeam}
           initialRegistrationOpen={initialRegistrationOpen}
+          initialPaymentStatus={initialPaymentStatus}
+          initialExtraSlotStatus={initialExtraSlotStatus}
         />
       </div>
     </main>

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import { getSessionUser, canManageSiteSettings } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { sendEmail } from "@/lib/notify";
@@ -70,6 +71,10 @@ export async function PATCH(req: NextRequest) {
         where: { id: payment.teamId },
         data: { extraSlotUnlocked: true },
       });
+    }
+
+    if (status === "VERIFIED") {
+      revalidateTag("confirmed-teams");
     }
 
     // Notify team members by email

@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { JetBrains_Mono } from "next/font/google";
-import { RouteTransitionShell } from "@/components/route-transition-shell";
 import { HACKATHON_FOOTER_LABEL } from "@/lib/hackathon-config";
 import "./globals.css";
 
@@ -32,9 +31,7 @@ export default function RootLayout({
         className={`${jetbrainsMono.variable} min-h-screen bg-neutral-950 font-mono text-neutral-100 antialiased`}
       >
         <div className="flex min-h-screen flex-col">
-          <div className="flex-1">
-            <RouteTransitionShell>{children}</RouteTransitionShell>
-          </div>
+          <div className="flex-1">{children}</div>
 
           <footer className="border-t border-white/10 bg-black/40 backdrop-blur-md">
             <div className="mx-auto flex w-full max-w-6xl flex-col gap-3 px-4 py-4 text-xs text-neutral-400 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
