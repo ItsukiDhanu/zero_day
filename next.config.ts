@@ -19,6 +19,15 @@ const cspDirectives = [
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
+  images: {
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "api.qrserver.com",
+        pathname: "/v1/create-qr-code/**",
+      },
+    ],
+  },
   experimental: {
     optimizePackageImports: ["@headlessui/react"],
   },

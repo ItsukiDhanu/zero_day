@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import { AlertCircle, CheckCircle, Clock } from "lucide-react";
 
 const UPI_ID = "9606726468@axl";
@@ -146,9 +147,12 @@ export function ExtraSlotPaymentForm() {
       </p>
 
       <div className="mb-6 rounded-lg border border-white/10 bg-black/60 p-4">
-        <img
+        <Image
           src={QR_IMAGE_URL}
           alt="UPI payment QR code"
+          width={320}
+          height={320}
+          sizes="(min-width: 640px) 320px, 80vw"
           className="mx-auto h-64 w-64 rounded-md border border-white/10 bg-white p-2"
         />
         <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
