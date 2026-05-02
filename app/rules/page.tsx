@@ -2,6 +2,7 @@ import Link from "next/link";
 import { cookies } from "next/headers";
 import { CommandPalette } from "@/components/command-palette";
 import { decodeSessionToken } from "@/lib/session";
+import { BASE_TEAM_MEMBER_LIMIT, EXTRA_SLOT_TEAM_MEMBER_LIMIT, MIN_TEAM_MEMBERS } from "@/lib/team-capacity";
 
 const rules = [
   {
@@ -15,7 +16,7 @@ const rules = [
   {
     title: "Team Structure",
     points: [
-      "Teams must have at least 2 and at most 4 members (5th slot available after extra-slot payment unlock).",
+      `Teams must have at least ${MIN_TEAM_MEMBERS} and at most ${BASE_TEAM_MEMBER_LIMIT} members (${EXTRA_SLOT_TEAM_MEMBER_LIMIT}th slot available after extra-slot payment unlock).`,
       "A participant can belong to only one team at a time.",
       "Team join code is private and should only be shared with intended members.",
     ],

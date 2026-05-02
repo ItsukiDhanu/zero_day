@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { CommandPalette } from "@/components/command-palette";
 import { HACKATHON_START_LABEL } from "@/lib/hackathon-config";
 import { decodeSessionToken } from "@/lib/session";
+import { EXTRA_SLOT_TEAM_MEMBER_LIMIT, MIN_TEAM_MEMBERS } from "@/lib/team-capacity";
 
 const faqs = [
   {
@@ -12,8 +13,7 @@ const faqs = [
   },
   {
     question: "What is the allowed team size?",
-    answer:
-      "Each team must have a minimum of 2 members and a maximum of 4 members.",
+    answer: `Each team must have a minimum of ${MIN_TEAM_MEMBERS} members and a maximum of ${EXTRA_SLOT_TEAM_MEMBER_LIMIT} members.`,
   },
   {
     question: "Is cross-department teaming allowed?",
@@ -46,8 +46,7 @@ const faqs = [
   },
   {
     question: "Where can I see eligible teams?",
-    answer:
-      "Use the Confirmed Teams page to view teams that have between 2 and 5 registered members (5th slot unlocked if needed).",
+    answer: `Use the Confirmed Teams page to view teams that have between ${MIN_TEAM_MEMBERS} and ${EXTRA_SLOT_TEAM_MEMBER_LIMIT} registered members.`,
   },
 ] as const;
 

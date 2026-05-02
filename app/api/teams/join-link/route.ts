@@ -4,6 +4,7 @@ import { ApiError, isApiError } from "@/lib/api-error";
 import { getSessionIdentity } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getOrCreateSiteSettings } from "@/lib/site-settings";
+import { EXTRA_SLOT_TEAM_MEMBER_LIMIT, getTeamMemberLimit } from "@/lib/team-capacity";
 
 type JoinLinkPayload = {
   joinLink?: unknown;
@@ -108,7 +109,7 @@ export async function POST(request: NextRequest) {
       }
 
       const currentMemberCount = await tx.user.count({ where: { teamId: team.id } });
-      const memberLimit = team.extraSlotUnlocked ? 5 : 4;
+      const memberLimit = getTeamMemberLimit(team.extraSlotUnlocked);
 
       if (!freshUser.teamId && currentMemberCount >= memberLimit) {
         throw new ApiError(409, `Team is at max capacity (${memberLimit}/${memberLimit}).`);
@@ -136,7 +137,7 @@ export async function POST(request: NextRequest) {
           },
           members: {
             orderBy: { createdAt: "asc" },
-            take: team.extraSlotUnlocked ? 5 : 4,
+            take: EXTRA_SLOT_TEAM_MEMBER_LIMIT,
             select: {
               id: true,
               name: true,

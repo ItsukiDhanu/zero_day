@@ -4,6 +4,7 @@ import { FormEvent, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AlertCircle, CheckCircle, Clock, AlertTriangle, Copy } from "lucide-react";
+import { getTeamMemberLimit } from "@/lib/team-capacity";
 
 type SessionUser = {
   id: string;
@@ -68,6 +69,8 @@ export function TeamDashboardShell({
   const [extraSlotStatus] = useState<string | null>(initialExtraSlotStatus);
   const [copiedLink, setCopiedLink] = useState<"link" | "code" | null>(null);
 
+  const memberLimit = getTeamMemberLimit(Boolean(team?.extraSlotUnlocked));
+  const slotCount = team ? memberLimit - team.memberCount : getTeamMemberLimit(false);
 
   const handleCreate = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -191,8 +194,6 @@ export function TeamDashboardShell({
   };
 
   const hasTeam = Boolean(team);
-  const memberLimit = team?.extraSlotUnlocked ? 5 : 4;
-  const slotCount = team ? memberLimit - team.memberCount : 4;
   const joinLinkUrl =
     team && team.joinLink && typeof window !== "undefined"
       ? `${window.location.origin}/teams/join-link/${team.joinLink}`
@@ -310,14 +311,14 @@ export function TeamDashboardShell({
               </div>
             </div>
 
-            {!team.extraSlotUnlocked && extraSlotStatus !== "VERIFIED" && team.memberCount >= 4 ? (
+            {!team.extraSlotUnlocked && extraSlotStatus !== "VERIFIED" && team.memberCount >= memberLimit ? (
               <div className="mt-4 rounded-lg border border-white/10 bg-black/50 p-4">
-                <p className="text-xs uppercase tracking-[0.2em] text-neutral-400">Unlock 5th Slot</p>
+                <p className="text-xs uppercase tracking-[0.2em] text-neutral-400">Unlock Extra Slot</p>
                 <p className="mt-2 text-sm text-neutral-300">
                   Your team is full. Pay Rs 50 to unlock an additional member slot.
                 </p>
                 <p className="mt-2 text-xs text-neutral-400">
-                  Complete the extra slot payment to unlock the 5th member slot.
+                  Complete the extra slot payment to unlock another member slot.
                 </p>
 
                 {extraSlotStatus === "PENDING" ? (

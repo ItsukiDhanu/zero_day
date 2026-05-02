@@ -8,6 +8,7 @@ import { decodeSessionToken } from "@/lib/session";
 import { isTeamPaymentVerified } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getOrCreateSiteSettings } from "@/lib/site-settings";
+import { getTeamMemberLimit, isConfirmedTeamSize } from "@/lib/team-capacity";
 
 type RepositorySubmissionState = {
   message?: string;
@@ -135,9 +136,9 @@ export async function submitTeamRepositoryAction(
     }
 
     const memberCount = team._count.members;
-    const maxMembers = team.extraSlotUnlocked ? 5 : 4;
+    const maxMembers = getTeamMemberLimit(team.extraSlotUnlocked);
 
-    if (memberCount < 2 || memberCount > maxMembers) {
+    if (!isConfirmedTeamSize(memberCount, team.extraSlotUnlocked)) {
       throw new ApiError(409, `Repository link can be submitted only for confirmed teams (2-${maxMembers} members).`);
     }
 

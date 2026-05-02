@@ -7,6 +7,7 @@ import { getConfirmedTeamCounts } from "@/lib/confirmed-team-counts";
 import { prisma } from "@/lib/prisma";
 import { decodeSessionToken } from "@/lib/session";
 import { getOrCreateSiteSettings } from "@/lib/site-settings";
+import { EXTRA_SLOT_TEAM_MEMBER_LIMIT, MIN_TEAM_MEMBERS, getTeamMemberLimit } from "@/lib/team-capacity";
 
 export const dynamic = "force-dynamic";
 
@@ -85,7 +86,7 @@ export default async function ConfirmedTeamsPage() {
           extraSlotUnlocked: true,
           members: {
             orderBy: { createdAt: "asc" },
-            take: 5,
+              take: EXTRA_SLOT_TEAM_MEMBER_LIMIT,
             select: {
               name: true,
               email: true,
@@ -99,8 +100,8 @@ export default async function ConfirmedTeamsPage() {
 
   const currentTeam = currentUser.team;
   const currentTeamMemberCount = currentTeam?._count.members ?? 0;
-  const currentTeamLimit = currentTeam?.extraSlotUnlocked ? 5 : 4;
-  const currentTeamIsConfirmed = currentTeamMemberCount >= 2 && currentTeamMemberCount <= currentTeamLimit;
+  const currentTeamLimit = getTeamMemberLimit(Boolean(currentTeam?.extraSlotUnlocked));
+  const currentTeamIsConfirmed = currentTeamMemberCount >= MIN_TEAM_MEMBERS && currentTeamMemberCount <= currentTeamLimit;
   const currentTeamCaptainId = currentTeam
     ? currentTeam.captainId ?? currentTeam.members[0]?.id ?? null
     : null;
@@ -201,12 +202,12 @@ export default async function ConfirmedTeamsPage() {
             <div className="mt-6 grid gap-4">
               {confirmedTeams.length === 0 ? (
                 <p className="rounded-lg border border-white/10 bg-black/60 px-3 py-3 text-sm text-neutral-400">
-                  No confirmed teams yet. A team appears here only after it has 2 to 5 members (5th slot unlocked if needed) and payment is verified.
+                  No confirmed teams yet. A team appears here only after it has {MIN_TEAM_MEMBERS} to {EXTRA_SLOT_TEAM_MEMBER_LIMIT} members and payment is verified.
                 </p>
               ) : (
                 confirmedTeams.map((team) => {
                   const memberCount = confirmedTeamCountById.get(team.id) ?? team.members.length;
-                  const memberLimit = team.extraSlotUnlocked ? 5 : 4;
+                  const memberLimit = getTeamMemberLimit(team.extraSlotUnlocked);
 
                   return (
                     <article key={team.id} className="rounded-xl border border-white/10 bg-black/60 p-4">

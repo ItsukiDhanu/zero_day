@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, KeyboardEvent, useDeferredValue, useEffect, useMemo, useState } from "react";
+import { getTeamMemberLimit } from "@/lib/team-capacity";
 
 const MAX_CRITERION_SCORE = 20;
 
@@ -49,6 +50,7 @@ export type JudgingTeamState = {
   id: string;
   name: string;
   memberCount: number;
+  extraSlotUnlocked: boolean;
   members: string[];
   repositoryUrl: string | null;
   judging: JudgingSnapshot | null;
@@ -485,7 +487,9 @@ export function JudgingBoard({ initialTeams }: JudgingBoardProps) {
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
                     <h2 className="text-lg font-semibold text-neutral-100">{team.name}</h2>
-                    <p className="mt-1 text-xs text-neutral-400">{team.memberCount}/4 members</p>
+                    <p className="mt-1 text-xs text-neutral-400">
+                      {team.memberCount}/{getTeamMemberLimit(team.extraSlotUnlocked)} members
+                    </p>
                   </div>
                   <span className="rounded-md border border-phosphor/40 bg-phosphor/10 px-2 py-1 text-xs font-semibold text-phosphor">
                     Total: {totalScore}/100

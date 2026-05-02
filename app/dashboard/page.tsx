@@ -7,6 +7,7 @@ import { canAccessJudging } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { decodeSessionToken } from "@/lib/session";
 import { getOrCreateSiteSettings } from "@/lib/site-settings";
+import { EXTRA_SLOT_TEAM_MEMBER_LIMIT, getTeamMemberLimit } from "@/lib/team-capacity";
 
 const YEAR_LABELS = {
   FIRST_YEAR: "1st Year",
@@ -55,7 +56,7 @@ export default async function DashboardPage() {
             },
             members: {
               orderBy: { createdAt: "asc" },
-              take: 5,
+              take: EXTRA_SLOT_TEAM_MEMBER_LIMIT,
               select: {
                 id: true,
                 name: true,
@@ -76,7 +77,7 @@ export default async function DashboardPage() {
   const team = user.team;
   const captainId = team ? team.captainId ?? team.members[0]?.id ?? null : null;
   const isCaptain = captainId === user.id;
-  const teamLimit = team?.extraSlotUnlocked ? 5 : 4;
+  const teamLimit = getTeamMemberLimit(Boolean(team?.extraSlotUnlocked));
 
   return (
     <main className="relative min-h-screen overflow-hidden bg-neutral-950 pb-12 text-neutral-100">

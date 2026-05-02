@@ -90,7 +90,7 @@ export function ExtraSlotPaymentForm() {
           <div>
             <h3 className="font-semibold text-green-300">Extra slot unlocked</h3>
             <p className="text-sm text-green-200/90">
-              Your payment has been verified. Your team can now add a 5th member.
+              Your payment has been verified. Your team can now add another member.
             </p>
           </div>
         </div>
@@ -140,7 +140,7 @@ export function ExtraSlotPaymentForm() {
 
   return (
     <div className="rounded-xl border border-white/10 bg-black/50 p-6 backdrop-blur-md">
-      <h2 className="text-xl font-semibold text-neutral-100 mb-4">Unlock 5th Slot</h2>
+      <h2 className="text-xl font-semibold text-neutral-100 mb-4">Unlock Extra Slot</h2>
       <p className="text-neutral-300 text-sm mb-6">
         Pay Rs {EXTRA_SLOT_FEE} via UPI and submit your transaction details to unlock an
         extra member slot.

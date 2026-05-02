@@ -8,6 +8,7 @@ import { canAccessJudging, canManageSiteSettings } from "@/lib/auth";
 import { getConfirmedTeamCounts } from "@/lib/confirmed-team-counts";
 import { prisma } from "@/lib/prisma";
 import { decodeSessionToken } from "@/lib/session";
+import { EXTRA_SLOT_TEAM_MEMBER_LIMIT } from "@/lib/team-capacity";
 
 export const dynamic = "force-dynamic";
 
@@ -27,6 +28,7 @@ type JudgingTeamRow = {
   id: string;
   name: string;
   repositoryUrl: string | null;
+  extraSlotUnlocked: boolean;
   members: Array<{
     email: string;
     name: string | null;
@@ -213,12 +215,13 @@ export default async function JudgingPage() {
               repositoryUrl: true,
               members: {
                 orderBy: { createdAt: "asc" },
-                take: 4,
+                take: EXTRA_SLOT_TEAM_MEMBER_LIMIT,
                 select: {
                   email: true,
                   name: true,
                 },
               },
+                extraSlotUnlocked: true,
             },
           }),
         )
@@ -299,6 +302,7 @@ export default async function JudgingPage() {
       id: team.id,
       name: team.name,
       memberCount: confirmedTeamCountById.get(team.id) ?? team.members.length,
+      extraSlotUnlocked: team.extraSlotUnlocked,
       members: team.members.map(displayMemberName),
       repositoryUrl: team.repositoryUrl,
       judging: judgingScore

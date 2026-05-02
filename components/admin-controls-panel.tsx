@@ -1,6 +1,7 @@
 "use client";
 
 import { KeyboardEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { getTeamMemberLimit } from "@/lib/team-capacity";
 
 type TeamMemberSnapshot = {
   id: string;
@@ -12,6 +13,7 @@ type TeamSnapshot = {
   id: string;
   name: string;
   joinCode: string;
+  extraSlotUnlocked: boolean;
 };
 
 type AdminManagedTeam = {
@@ -19,6 +21,7 @@ type AdminManagedTeam = {
   name: string;
   joinCode: string;
   createdAt: string;
+  extraSlotUnlocked: boolean;
   memberCount: number;
   members: TeamMemberSnapshot[];
 };
@@ -995,7 +998,7 @@ export function AdminControlsPanel({ mode = "admin" }: { mode?: ControlPanelMode
 
                     <p className="mt-2 text-xs text-neutral-400">
                       {managedUser.teamId && linkedTeam
-                        ? `Team: ${linkedTeam.name} (${linkedTeam.joinCode}) • ${teamMemberCountByTeamId.get(managedUser.teamId) ?? 0}/4`
+                        ? `Team: ${linkedTeam.name} (${linkedTeam.joinCode}) • ${teamMemberCountByTeamId.get(managedUser.teamId) ?? 0}/${getTeamMemberLimit(linkedTeam.extraSlotUnlocked)}`
                         : managedUser.teamId
                           ? "Team: Assigned"
                           : "Team: None"}
@@ -1077,7 +1080,9 @@ export function AdminControlsPanel({ mode = "admin" }: { mode?: ControlPanelMode
                     <div>
                       <p className="text-sm font-semibold text-neutral-100">{managedTeam.name}</p>
                       <p className="text-xs text-neutral-400">Join Code: {managedTeam.joinCode}</p>
-                      <p className="mt-1 text-xs text-neutral-400">Members: {managedTeam.memberCount}/4</p>
+                      <p className="mt-1 text-xs text-neutral-400">
+                        Members: {managedTeam.memberCount}/{getTeamMemberLimit(managedTeam.extraSlotUnlocked)}
+                      </p>
                       <p className="mt-1 text-[11px] text-neutral-500">
                         Created: {new Date(managedTeam.createdAt).toLocaleString()}
                       </p>

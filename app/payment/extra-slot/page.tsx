@@ -78,7 +78,7 @@ export default async function ExtraSlotPaymentPage() {
             <p className="text-xs uppercase tracking-[0.2em] text-phosphor/90">Extra Slot Payment</p>
             <h1 className="mt-2 text-3xl font-bold text-neutral-100">{user.team?.name || "Your Team"}</h1>
             <p className="mt-2 text-neutral-300">
-              Unlock a 5th member slot for your team by submitting the extra slot payment proof.
+              Unlock another member slot for your team by submitting the extra slot payment proof.
             </p>
           </div>
 

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { ApiError, isApiError } from "@/lib/api-error";
 import { canAccessJudging, getSessionUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { isConfirmedTeamSize } from "@/lib/team-capacity";
 
 const MAX_CRITERION_SCORE = 20;
 
@@ -95,6 +96,7 @@ export async function PATCH(request: NextRequest) {
       where: { id: payload.teamId },
       select: {
         id: true,
+        extraSlotUnlocked: true,
         _count: {
           select: {
             members: true,
@@ -107,8 +109,8 @@ export async function PATCH(request: NextRequest) {
       throw new ApiError(404, "Team not found.");
     }
 
-    if (team._count.members < 2 || team._count.members > 4) {
-      throw new ApiError(409, "Only confirmed teams (2-4 members) can be judged.");
+    if (!isConfirmedTeamSize(team._count.members, team.extraSlotUnlocked)) {
+      throw new ApiError(409, "Only confirmed teams (2-5 members) can be judged.");
     }
 
     const judging = await prismaWithJudging.teamJudgingScore.upsert({

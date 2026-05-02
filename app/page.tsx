@@ -2,6 +2,7 @@ import { HeroSection } from "@/components/hero-section";
 import { cookies } from "next/headers";
 import Link from "next/link";
 import { decodeSessionToken } from "@/lib/session";
+import { EXTRA_SLOT_TEAM_MEMBER_LIMIT, MIN_TEAM_MEMBERS } from "@/lib/team-capacity";
 
 export default async function HomePage() {
   const cookieStore = await cookies();
@@ -110,9 +111,9 @@ export default async function HomePage() {
           >
             <p className="text-xs uppercase tracking-[0.2em] text-phosphor/90">Public Roster</p>
             <h2 className="mt-3 text-xl font-semibold text-neutral-100">View Confirmed Teams</h2>
-            <p className="mt-3 text-sm text-neutral-300">
-              Public list of teams with 2 to 5 members (5th slot unlocked if needed), including participant names.
-            </p>
+              <p className="mt-3 text-sm text-neutral-300">
+                Public list of teams with {MIN_TEAM_MEMBERS} to {EXTRA_SLOT_TEAM_MEMBER_LIMIT} members, including participant names.
+              </p>
           </Link>
 
           <Link

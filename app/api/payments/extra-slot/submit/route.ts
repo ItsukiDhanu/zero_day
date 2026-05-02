@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { BASE_TEAM_MEMBER_LIMIT } from "@/lib/team-capacity";
 
 const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024;
 const ALLOWED_MIME_TYPES = ["image/png", "image/jpeg", "image/jpg", "image/webp", "application/pdf"];
@@ -26,8 +27,11 @@ export async function POST(req: NextRequest) {
     }
 
     const memberCount = await prisma.user.count({ where: { teamId: team.id } });
-    if (memberCount < 4) {
-      return NextResponse.json({ error: "Extra slot is only available when the team is full (4/4)." }, { status: 400 });
+    if (memberCount < BASE_TEAM_MEMBER_LIMIT) {
+      return NextResponse.json(
+        { error: `Extra slot is only available when the team has ${BASE_TEAM_MEMBER_LIMIT} members.` },
+        { status: 400 },
+      );
     }
 
     const formData = await req.formData();
