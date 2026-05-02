@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
 
 const SESSION_UPDATED_EVENT = "session-updated";
@@ -41,6 +42,10 @@ type RegistrationResponse = {
   };
 };
 
+type RegistrationFormProps = {
+  redirectTo?: string;
+};
+
 const initialState: RegistrationState = {
   name: "",
   year: "",
@@ -54,7 +59,8 @@ function isAcharyaEmail(email: string) {
   return /^[^\s@]+@acharya\.ac\.in$/.test(email.trim().toLowerCase());
 }
 
-export function RegistrationForm() {
+export function RegistrationForm({ redirectTo = "/dashboard" }: RegistrationFormProps) {
+  const router = useRouter();
   const [form, setForm] = useState<RegistrationState>(initialState);
   const [status, setStatus] = useState<"idle" | "submitting" | "success" | "error">("idle");
   const [message, setMessage] = useState("");
@@ -90,6 +96,7 @@ export function RegistrationForm() {
       setForm(initialState);
       setMessage(payload.message ?? `Authenticated as ${payload.user?.email ?? "new participant"}.`);
       window.dispatchEvent(new Event(SESSION_UPDATED_EVENT));
+      router.push(redirectTo);
     } catch (error) {
       setStatus("error");
       setMessage(error instanceof Error ? error.message : "Registration request failed.");

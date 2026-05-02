@@ -4,10 +4,26 @@ import { CommandPalette } from "@/components/command-palette";
 import { RegistrationForm } from "@/components/registration-form";
 import { decodeSessionToken } from "@/lib/session";
 
-export default async function RegisterPage() {
+type RegisterPageProps = {
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+};
+
+function getRedirectTarget(nextParam: string | string[] | undefined) {
+  const value = Array.isArray(nextParam) ? nextParam[0] : nextParam;
+
+  if (!value || !value.startsWith("/") || value.startsWith("//")) {
+    return "/dashboard";
+  }
+
+  return value;
+}
+
+export default async function RegisterPage({ searchParams }: RegisterPageProps) {
   const cookieStore = await cookies();
   const sessionToken = cookieStore.get("zd_session")?.value;
   const isAuthenticated = Boolean(decodeSessionToken(sessionToken));
+  const resolvedSearchParams = (await searchParams) ?? {};
+  const redirectTarget = getRedirectTarget(resolvedSearchParams.next);
 
   return (
     <main className="relative min-h-screen overflow-hidden bg-neutral-950 pb-12 text-neutral-100">
@@ -70,7 +86,7 @@ export default async function RegisterPage() {
           </div>
         </header>
 
-        <RegistrationForm />
+        <RegistrationForm redirectTo={redirectTarget} />
       </div>
     </main>
   );
