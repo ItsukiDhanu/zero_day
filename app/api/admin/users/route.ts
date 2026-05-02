@@ -93,6 +93,7 @@ export async function GET(request: NextRequest) {
             id: true,
             name: true,
             joinCode: true,
+            extraSlotUnlocked: true,
           },
         })
       : [];
@@ -104,6 +105,7 @@ export async function GET(request: NextRequest) {
           id: team.id,
           name: team.name,
           joinCode: team.joinCode,
+          extraSlotUnlocked: team.extraSlotUnlocked,
         },
       ]),
     );
