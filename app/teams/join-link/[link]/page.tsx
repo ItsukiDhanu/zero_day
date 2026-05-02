@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useState, useEffect } from "react";
+import { useState, useEffect, use } from "react";
 import { useRouter } from "next/navigation";
 import { AlertCircle, CheckCircle, Loader } from "lucide-react";
 
@@ -18,11 +18,18 @@ type TeamResponse = {
   }>;
 };
 
+type JoinLinkResponse = {
+  team?: TeamResponse;
+  message?: string;
+  error?: string;
+};
+
 type PageProps = {
-  params: { link: string };
+  params: Promise<{ link: string }>;
 };
 
 export default function JoinViaLinkPage({ params }: PageProps) {
+  const resolvedParams = use(params);
   const router = useRouter();
   const [status, setStatus] = useState<"loading" | "idle" | "joining" | "success" | "error">("loading");
   const [message, setMessage] = useState("");
@@ -37,10 +44,10 @@ export default function JoinViaLinkPage({ params }: PageProps) {
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ joinLink: params.link }),
+          body: JSON.stringify({ joinLink: resolvedParams.link }),
         });
 
-        const payload = (await response.json().catch(() => ({}))) as any;
+        const payload = (await response.json().catch(() => ({}))) as JoinLinkResponse;
 
         if (!response.ok) {
           throw new Error(payload.error ?? "Failed to join team via link.");
@@ -63,7 +70,7 @@ export default function JoinViaLinkPage({ params }: PageProps) {
     };
 
     handleJoin();
-  }, [params.link, router]);
+  }, [resolvedParams.link, router]);
 
   return (
     <main className="relative min-h-screen overflow-hidden bg-neutral-950 pb-12 text-neutral-100">
