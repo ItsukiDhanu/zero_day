@@ -1,8 +1,5 @@
--- AlterTable
-ALTER TABLE "Team" ADD COLUMN "join_link" VARCHAR(32) NOT NULL DEFAULT '';
+-- AlterTable - add join_link column as nullable first
+ALTER TABLE "Team" ADD COLUMN "join_link" VARCHAR(32);
 
--- CreateIndex to make join_link unique
-CREATE UNIQUE INDEX "Team_join_link_key" ON "Team"("join_link");
-
--- CreateIndex for lookups
+-- Add index for faster lookups
 CREATE INDEX "Team_join_link_idx" ON "Team"("join_link");

@@ -20,7 +20,7 @@ type TeamState = {
   id: string;
   name: string;
   joinCode: string;
-  joinLink: string;
+  joinLink: string | null;
   memberCount: number;
   extraSlotUnlocked: boolean;
   members: Array<{

@@ -12,7 +12,7 @@ function mapTeamState(team: {
   id: string;
   name: string;
   joinCode: string;
-  joinLink: string;
+  joinLink: string | null;
   captainId: string | null;
   extraSlotUnlocked: boolean;
   _count: { members: number };
