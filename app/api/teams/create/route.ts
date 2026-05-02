@@ -4,7 +4,7 @@ import { ApiError, isApiError } from "@/lib/api-error";
 import { getSessionUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getOrCreateSiteSettings } from "@/lib/site-settings";
-import { generateTeamJoinCode } from "@/lib/team-code";
+import { generateTeamJoinCode, generateTeamJoinLink } from "@/lib/team-code";
 
 type CreateTeamPayload = {
   name?: unknown;
@@ -63,6 +63,7 @@ export async function POST(request: NextRequest) {
 
     for (let attempt = 0; attempt < MAX_CODE_ATTEMPTS; attempt += 1) {
       const joinCode = generateTeamJoinCode();
+      const joinLink = generateTeamJoinLink();
 
       try {
         const team = await prisma.$transaction(async (tx) => {
@@ -99,12 +100,14 @@ export async function POST(request: NextRequest) {
             data: {
               name: payload.name,
               joinCode,
+              joinLink,
               captainId: freshUser.id,
             },
             select: {
               id: true,
               name: true,
               joinCode: true,
+              joinLink: true,
               captainId: true,
             },
           });
@@ -146,13 +149,19 @@ export async function POST(request: NextRequest) {
           Array.isArray(error.meta?.target) &&
           error.meta.target.includes("join_code");
 
+        const duplicateJoinLink =
+          error instanceof Prisma.PrismaClientKnownRequestError &&
+          error.code === "P2002" &&
+          Array.isArray(error.meta?.target) &&
+          error.meta.target.includes("join_link");
+
         const duplicateTeamName =
           error instanceof Prisma.PrismaClientKnownRequestError &&
           error.code === "P2002" &&
           Array.isArray(error.meta?.target) &&
           error.meta.target.includes("name");
 
-        if (duplicateJoinCode) {
+        if (duplicateJoinCode || duplicateJoinLink) {
           continue;
         }
 

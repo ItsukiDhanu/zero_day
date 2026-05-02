@@ -3,7 +3,7 @@
 import { FormEvent, useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { AlertCircle, CheckCircle, Clock, AlertTriangle } from "lucide-react";
+import { AlertCircle, CheckCircle, Clock, AlertTriangle, Copy } from "lucide-react";
 
 type SessionUser = {
   id: string;
@@ -20,6 +20,7 @@ type TeamState = {
   id: string;
   name: string;
   joinCode: string;
+  joinLink: string;
   memberCount: number;
   extraSlotUnlocked: boolean;
   members: Array<{
@@ -63,6 +64,7 @@ export function TeamDashboardShell({
   const [extraSlotStatus, setExtraSlotStatus] = useState<string | null>(null);
   const [extraSlotLoading, setExtraSlotLoading] = useState(false);
   const [loadingPayment, setLoadingPayment] = useState(false);
+  const [copiedLink, setCopiedLink] = useState<"link" | "code" | null>(null);
 
   const fetchPaymentStatus = useCallback(async () => {
     setLoadingPayment(true);
@@ -222,6 +224,13 @@ export function TeamDashboardShell({
     }
   };
 
+  const handleCopyToClipboard = (text: string, type: "link" | "code") => {
+    navigator.clipboard.writeText(text).then(() => {
+      setCopiedLink(type);
+      setTimeout(() => setCopiedLink(null), 2000);
+    });
+  };
+
   const hasTeam = Boolean(team);
   const memberLimit = team?.extraSlotUnlocked ? 5 : 4;
   const slotCount = team ? memberLimit - team.memberCount : 4;
@@ -280,8 +289,35 @@ export function TeamDashboardShell({
               <div className="rounded-lg border border-white/10 bg-black/50 p-3">
                 <p className="text-xs uppercase tracking-[0.2em] text-neutral-400">Join Code</p>
                 <p className="mt-2 text-lg font-semibold tracking-[0.28em] text-phosphor">{team.joinCode}</p>
+                <button
+                  onClick={() => handleCopyToClipboard(team.joinCode, "code")}
+                  className="mt-2 flex items-center gap-2 text-xs text-neutral-400 transition hover:text-neutral-300"
+                >
+                  <Copy className="h-3 w-3" />
+                  {copiedLink === "code" ? "Copied!" : "Copy"}
+                </button>
               </div>
 
+              <div className="rounded-lg border border-white/10 bg-black/50 p-3">
+                <p className="text-xs uppercase tracking-[0.2em] text-neutral-400">Join Link</p>
+                <p className="mt-2 truncate text-sm font-mono text-phosphor">
+                  {typeof window !== "undefined" ? `${window.location.origin}/teams/join-link/${team.joinLink}` : "Loading..."}
+                </p>
+                <button
+                  onClick={() => {
+                    if (typeof window !== "undefined") {
+                      handleCopyToClipboard(`${window.location.origin}/teams/join-link/${team.joinLink}`, "link");
+                    }
+                  }}
+                  className="mt-2 flex items-center gap-2 text-xs text-neutral-400 transition hover:text-neutral-300"
+                >
+                  <Copy className="h-3 w-3" />
+                  {copiedLink === "link" ? "Copied!" : "Copy"}
+                </button>
+              </div>
+            </div>
+
+            <div className="mt-4 grid gap-4 sm:grid-cols-2">
               <div className="rounded-lg border border-white/10 bg-black/50 p-3">
                 <p className="text-xs uppercase tracking-[0.2em] text-neutral-400">Capacity</p>
                 <p className="mt-2 text-lg font-semibold text-neutral-100">{team.memberCount}/{memberLimit} members</p>

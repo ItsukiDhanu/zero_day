@@ -61,6 +61,7 @@ model Team {
   id        String @id @default(uuid()) @db.Uuid
   name      String
   joinCode  String @unique @map("join_code") @db.Char(6)
+  joinLink  String @unique @map("join_link") @db.VarChar(32)
   repositoryUrl String? @map("repository_url")
   members   User[] @relation("TeamMembership")
   judgingScore TeamJudgingScore?
@@ -74,6 +75,7 @@ model Team {
 
   @@index([captainId])
   @@index([createdAt])
+  @@index([joinLink])
 
   // Prisma cannot enforce relation-cardinality max(4) in schema DSL.
   // Enforce 4-member cap in app logic and/or a SQL trigger/check in migration.
