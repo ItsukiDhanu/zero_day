@@ -9,7 +9,8 @@
     "start": "next start",
     "lint": "next lint",
     "prisma:generate": "prisma generate",
-    "prisma:migrate": "prisma migrate dev"
+    "prisma:migrate": "prisma migrate dev",
+    "backfill:join-links": "node scripts/fill-join-links.js"
   },
   "dependencies": {
     "@headlessui/react": "^2.2.4",

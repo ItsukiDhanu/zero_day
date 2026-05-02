@@ -234,6 +234,10 @@ export function TeamDashboardShell({
   const hasTeam = Boolean(team);
   const memberLimit = team?.extraSlotUnlocked ? 5 : 4;
   const slotCount = team ? memberLimit - team.memberCount : 4;
+  const joinLinkUrl =
+    team && team.joinLink && typeof window !== "undefined"
+      ? `${window.location.origin}/teams/join-link/${team.joinLink}`
+      : null;
 
   return (
     <section id="teams" className="mx-auto mt-10 w-full max-w-5xl scroll-mt-20 pb-12">
@@ -301,15 +305,16 @@ export function TeamDashboardShell({
               <div className="rounded-lg border border-white/10 bg-black/50 p-3">
                 <p className="text-xs uppercase tracking-[0.2em] text-neutral-400">Join Link</p>
                 <p className="mt-2 truncate text-sm font-mono text-phosphor">
-                  {typeof window !== "undefined" ? `${window.location.origin}/teams/join-link/${team.joinLink}` : "Loading..."}
+                  {joinLinkUrl ?? "Join link unavailable. Ask organizer to refresh links."}
                 </p>
                 <button
                   onClick={() => {
-                    if (typeof window !== "undefined") {
-                      handleCopyToClipboard(`${window.location.origin}/teams/join-link/${team.joinLink}`, "link");
+                    if (joinLinkUrl) {
+                      handleCopyToClipboard(joinLinkUrl, "link");
                     }
                   }}
-                  className="mt-2 flex items-center gap-2 text-xs text-neutral-400 transition hover:text-neutral-300"
+                  disabled={!joinLinkUrl}
+                  className="mt-2 flex items-center gap-2 text-xs text-neutral-400 transition enabled:hover:text-neutral-300 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   <Copy className="h-3 w-3" />
                   {copiedLink === "link" ? "Copied!" : "Copy"}

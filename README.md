@@ -81,6 +81,17 @@ http://localhost:3000
 - `npm run lint` - run lint checks
 - `npm run prisma:generate` - generate Prisma client
 - `npm run prisma:migrate` - run Prisma dev migrations
+- `npm run backfill:join-links` - generate join links for legacy teams missing `join_link`
+
+## Join Link Backfill
+
+If your database has older teams created before join links were introduced, run:
+
+```bash
+npm run backfill:join-links
+```
+
+Run this once after applying the join-link migration so every team has a copyable invite URL.
 
 ## Project Structure
 
