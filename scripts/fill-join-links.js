@@ -1,10 +1,14 @@
+const { randomBytes } = require('crypto');
 const { PrismaClient } = require('@prisma/client');
 
 const TEAM_LINK_ALPHABET = 'abcdefghijklmnopqrstuvwxyz0123456789';
 
-function generateToken() {
+function generateToken(length, alphabet) {
+  const bytes = randomBytes(length);
   let token = '';
-  for (let i = 0; i < 24; i++) token += TEAM_LINK_ALPHABET[Math.floor(Math.random() * TEAM_LINK_ALPHABET.length)];
+  for (let i = 0; i < length; i += 1) {
+    token += alphabet[bytes[i] % alphabet.length];
+  }
   return token;
 }
 
@@ -17,7 +21,7 @@ async function main() {
     for (const t of teams) {
       let tries = 0;
       while (tries < 10) {
-        const token = generateToken();
+        const token = generateToken(24, TEAM_LINK_ALPHABET);
         const exists = await prisma.team.findUnique({ where: { joinLink: token }, select: { id: true } });
         if (!exists) {
           await prisma.team.update({ where: { id: t.id }, data: { joinLink: token } });

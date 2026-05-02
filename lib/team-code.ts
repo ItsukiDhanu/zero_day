@@ -1,23 +1,24 @@
+import { randomBytes } from "crypto";
+
 const TEAM_CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 const TEAM_LINK_ALPHABET = "abcdefghijklmnopqrstuvwxyz0123456789";
 
-export function generateTeamJoinCode() {
-  let code = "";
+function randomToken(length: number, alphabet: string) {
+  const bytes = randomBytes(length);
+  let token = "";
 
-  for (let index = 0; index < 6; index += 1) {
-    code += TEAM_CODE_ALPHABET[Math.floor(Math.random() * TEAM_CODE_ALPHABET.length)];
+  for (let index = 0; index < length; index += 1) {
+    token += alphabet[bytes[index] % alphabet.length];
   }
 
-  return code;
+  return token;
+}
+
+export function generateTeamJoinCode() {
+  return randomToken(6, TEAM_CODE_ALPHABET);
 }
 
 export function generateTeamJoinLink() {
-  let link = "";
-
   // Generate a 24-character URL-safe token
-  for (let index = 0; index < 24; index += 1) {
-    link += TEAM_LINK_ALPHABET[Math.floor(Math.random() * TEAM_LINK_ALPHABET.length)];
-  }
-
-  return link;
+  return randomToken(24, TEAM_LINK_ALPHABET);
 }
