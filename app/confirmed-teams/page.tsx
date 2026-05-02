@@ -85,6 +85,7 @@ export default async function ConfirmedTeamsPage() {
           id: true,
           name: true,
           repositoryUrl: true,
+          extraSlotUnlocked: true,
           members: {
             orderBy: { createdAt: "asc" },
             take: 5,
@@ -208,48 +209,53 @@ export default async function ConfirmedTeamsPage() {
                   No confirmed teams yet. A team appears here only after it has 2 to 5 members (5th slot unlocked if needed) and payment is verified.
                 </p>
               ) : (
-                confirmedTeams.map((team) => (
-                  <article key={team.id} className="rounded-xl border border-white/10 bg-black/60 p-4">
-                    <div className="flex flex-wrap items-center justify-between gap-3">
-                      <div>
-                        <h2 className="text-lg font-semibold text-neutral-100">{team.name}</h2>
-                        <p className="mt-1 text-xs text-neutral-400">{confirmedTeamCountById.get(team.id) ?? team.members.length}/4 members</p>
+                confirmedTeams.map((team) => {
+                  const memberCount = confirmedTeamCountById.get(team.id) ?? team.members.length;
+                  const memberLimit = team.extraSlotUnlocked ? 5 : 4;
+
+                  return (
+                    <article key={team.id} className="rounded-xl border border-white/10 bg-black/60 p-4">
+                      <div className="flex flex-wrap items-center justify-between gap-3">
+                        <div>
+                          <h2 className="text-lg font-semibold text-neutral-100">{team.name}</h2>
+                          <p className="mt-1 text-xs text-neutral-400">{memberCount}/{memberLimit} members</p>
+                        </div>
+                        <span className="rounded-md border border-phosphor/40 bg-phosphor/10 px-2 py-1 text-[11px] font-semibold text-phosphor">
+                          CONFIRMED
+                        </span>
                       </div>
-                      <span className="rounded-md border border-phosphor/40 bg-phosphor/10 px-2 py-1 text-[11px] font-semibold text-phosphor">
-                        CONFIRMED
-                      </span>
-                    </div>
 
-                    <div className="mt-3 rounded-lg border border-white/10 bg-black/70 p-3">
-                      <p className="text-xs uppercase tracking-[0.18em] text-neutral-400">Members</p>
-                      <ul className="mt-2 grid gap-1 text-sm text-neutral-200">
-                        {team.members.map((member) => (
-                          <li key={`${team.id}-${member.email}`}>{displayMemberName(member)}</li>
-                        ))}
-                      </ul>
-                    </div>
+                      <div className="mt-3 rounded-lg border border-white/10 bg-black/70 p-3">
+                        <p className="text-xs uppercase tracking-[0.18em] text-neutral-400">Members</p>
+                        <ul className="mt-2 grid gap-1 text-sm text-neutral-200">
+                          {team.members.map((member) => (
+                            <li key={`${team.id}-${member.email}`}>{displayMemberName(member)}</li>
+                          ))}
+                        </ul>
+                      </div>
 
-                    <div className="mt-3 rounded-lg border border-white/10 bg-black/70 p-3">
-                      <p className="text-xs uppercase tracking-[0.18em] text-neutral-400">GitHub Repository</p>
-                      {canViewRepositoryLinks ? (
-                        team.repositoryUrl ? (
-                          <a
-                            href={team.repositoryUrl}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="mt-2 inline-flex break-all text-sm font-medium text-phosphor transition hover:text-phosphor/80"
-                          >
-                            {team.repositoryUrl}
-                          </a>
+                      <div className="mt-3 rounded-lg border border-white/10 bg-black/70 p-3">
+                        <p className="text-xs uppercase tracking-[0.18em] text-neutral-400">GitHub Repository</p>
+                        {canViewRepositoryLinks ? (
+                          team.repositoryUrl ? (
+                            <a
+                              href={team.repositoryUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="mt-2 inline-flex break-all text-sm font-medium text-phosphor transition hover:text-phosphor/80"
+                            >
+                              {team.repositoryUrl}
+                            </a>
+                          ) : (
+                            <p className="mt-2 text-sm text-neutral-400">Repository link not submitted yet.</p>
+                          )
                         ) : (
-                          <p className="mt-2 text-sm text-neutral-400">Repository link not submitted yet.</p>
-                        )
-                      ) : (
-                        <p className="mt-2 text-sm text-neutral-400">Visible only to organizers and admins.</p>
-                      )}
-                    </div>
-                  </article>
-                ))
+                          <p className="mt-2 text-sm text-neutral-400">Visible only to organizers and admins.</p>
+                        )}
+                      </div>
+                    </article>
+                  );
+                })
               )}
             </div>
           </div>
